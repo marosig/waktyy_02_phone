@@ -3,1829 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>waktyy -  Student Productivity App</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg-dark: #0a0a0a;
-            --bg-card: #1a1a1a;
-            --bg-card-hover: #252525;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --accent-primary: #00d4aa;
-            --accent-secondary: #6366f1;
-            --accent-pink: #ec4899;
-            --accent-orange: #f59e0b;
-            --border: #333333;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-        }
-
-        [data-theme="light"] {
-            --bg-dark: #ffffff;
-            --bg-card: #f8fafc;
-            --bg-card-hover: #f1f5f9;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --border: #e2e8f0;
-        }
-
-        [data-theme="white"] {
-            --bg-dark: #fefefe;
-            --bg-card: #ffffff;
-            --bg-card-hover: #f9fafb;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --border: #e5e7eb;
-        }
-
-        [data-theme="neon"] {
-            --bg-dark: #0f0f23;
-            --bg-card: #1a1a2e;
-            --bg-card-hover: #16213e;
-            --text-primary: #eee6ff;
-            --text-secondary: #9d8df1;
-            --accent-primary: #00ffff;
-            --accent-secondary: #ff00ff;
-            --border: #3d3d5c;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            min-height: 100vh;
-            background-image: 
-                radial-gradient(circle at 20% 80%, rgba(0, 212, 170, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
-            transition: all 0.3s ease;
-        }
-
-        .container {
-            max-width: 460px;
-            margin: 0 auto;
-            padding: 0 15px;
-            position: relative;
-        }
-
-        .page {
-            display: none;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 60px 0 30px;
-        }
-
-        .page-title {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .app-title {
-            font-size: 36px;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: pulse 2s infinite ease-in-out;
-            letter-spacing: 1px;
-        }
-
-        .theme-selector {
-            display: flex;
-            gap: 8px;
-        }
-
-        .theme-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            border: 2px solid var(--border);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .theme-btn.dark { background: var(--bg-dark, #0a0a0a); }
-        .theme-btn.light { background: var(--bg-dark, #ffffff); }
-        .theme-btn.white { background: var(--bg-dark, #fefefe); }
-        .theme-btn.neon { background: linear-gradient(45deg, var(--accent-primary, #00ffff), var(--accent-secondary, #ff00ff)); }
-
-        .theme-btn.active {
-            border-color: var(--accent-primary);
-            transform: scale(1.1);
-        }
-
-        .card {
-            background: var(--bg-card);
-            border-radius: 18px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border);
-            backdrop-filter: blur(8px);
-            transition: all 0.3s ease;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 212, 170, 0.1);
-        }
-
-        .stats-grid {
-            display: flex;
-            overflow-x: auto;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            scrollbar-width: thin;
-            scrollbar-color: var(--accent-primary) var(--bg-card);
-        }
-
-        .stats-grid::-webkit-scrollbar {
-            height: 6px;
-        }
-
-        .stats-grid::-webkit-scrollbar-thumb {
-            background: var(--accent-primary);
-            border-radius: 10px;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border-radius: 18px;
-            padding: 12px;
-            text-align: center;
-            border: 1px solid var(--border);
-            backdrop-filter: blur(8px);
-            transition: all 0.3s ease;
-            min-width: 100px;
-            cursor: pointer;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-primary);
-            box-shadow: 0 15px 40px rgba(0, 212, 170, 0.2);
-        }
-
-        .stat-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .stat-number {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            color: var(--text-primary);
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .task-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .task-item {
-            background: var(--bg-card);
-            border-radius: 18px;
-            padding: 15px;
-            border: 1px solid var(--border);
-            transition: all 0.3s ease;
-            position: relative;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .task-item.study::before { background: var(--accent-primary); }
-        .task-item.exercise::before { background: var(--accent-orange); }
-        .task-item.hobby::before { background: var(--accent-pink); }
-        .task-item.break::before { background: var(--warning); }
-        .task-item.free::before { background: var(--accent-secondary); }
-        .task-item.custom::before { background: var(--text-secondary); }
-
-        .task-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            border-radius: 18px 0 0 18px;
-        }
-
-        .task-item:hover::before {
-            opacity: 1;
-        }
-
-        .task-item.completed {
-            opacity: 0.7;
-            background: var(--bg-card-hover);
-        }
-
-        .task-item.completed .task-title {
-            text-decoration: line-through;
-        }
-
-        .task-item.completed::before {
-            background: var(--success);
-            opacity: 1;
-        }
-
-        .task-checkbox {
-            width: 18px;
-            height: 18px;
-            border: 2px solid var(--border);
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        .task-checkbox.checked {
-            background: var(--success);
-            border-color: var(--success);
-        }
-
-        .task-checkbox.checked::after {
-            content: '\f00c';
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            color: white;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-        }
-
-        .task-content {
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .task-title {
-            font-size: 15px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            line-height: 1.3;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .task-meta {
-            font-size: 13px;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .task-time {
-            font-weight: 500;
-        }
-
-        .task-duration {
-            background: rgba(0, 212, 170, 0.1);
-            color: var(--accent-primary);
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        .fa-icon {
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            font-size: 20px;
-            margin-top: -2px;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 212, 170, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            background: var(--bg-card);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--accent-primary);
-            box-shadow: 0 5px 20px rgba(0, 212, 170, 0.2);
-        }
-
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 14px;
-            border-radius: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: var(--bg-card);
-            color: var(--text-primary);
-            font-size: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
-        }
-
-        .form-select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: var(--bg-card);
-            color: var(--text-primary);
-            font-size: 15px;
-            cursor: pointer;
-        }
-
-        .quiz-container {
-            max-width: 100%;
-        }
-
-        .quiz-progress {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 30px;
-        }
-
-        .progress-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--border);
-            transition: all 0.3s ease;
-        }
-
-        .progress-dot.active {
-            background: var(--accent-primary);
-            transform: scale(1.2);
-        }
-
-        .progress-dot.completed {
-            background: var(--success);
-        }
-
-        .quiz-step {
-            display: none;
-        }
-
-        .quiz-step.active {
-            display: block;
-            animation: slideIn 0.5s ease-out;
-        }
-
-        .quiz-navigation {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 30px;
-        }
-
-        .schedule-timeline {
-            position: relative;
-        }
-
-        .schedule-timeline::before {
-            content: '';
-            position: absolute;
-            left: 35px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: var(--border);
-        }
-
-        .schedule-item {
-            position: relative;
-            margin-bottom: 15px;
-            padding-left: 80px;
-        }
-
-        .schedule-time {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 60px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-align: right;
-        }
-
-        .schedule-dot {
-            position: absolute;
-            left: 26px;
-            top: 8px;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: var(--accent-primary);
-            border: 3px solid var(--bg-dark);
-        }
-
-        .navigation {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--bg-card);
-            border-radius: 25px 25px 0 0;
-            padding: 12px;
-            width: 100%;
-            max-width: 460px;
-            height: 80px;
-            border: 2px solid var(--border);
-            border-bottom: none;
-            backdrop-filter: blur(8px);
-            z-index: 1000;
-        }
-
-        .nav-items {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            gap: 12px;
-            height: 100%;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            padding: 8px;
-            border-radius: 14px;
-            min-width: 48px;
-        }
-
-        .nav-item.active {
-            background: rgba(0, 212, 170, 0.1);
-        }
-
-        .nav-icon {
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            font-size: 32px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-item.active .nav-icon {
-            color: var(--accent-primary);
-            transform: scale(1.1);
-        }
-
-        .content {
-            padding-bottom: 120px;
-        }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 15px 20px;
-            max-width: 300px;
-            z-index: 1001;
-            transform: translateX(100%);
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-            opacity: 1;
-        }
-
-        .notification.success {
-            border-color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
-        }
-
-        .notification.error {
-            border-color: var(--danger);
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 30px 15px;
-            color: var(--text-secondary);
-        }
-
-        .empty-icon {
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            font-size: 40px;
-            margin-bottom: 12px;
-            opacity: 0.5;
-        }
-
-        .empty-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        .empty-description {
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .profile-section {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .profile-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            font-size: 36px;
-            margin: 0 auto 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .profile-avatar:hover {
-            transform: scale(1.1);
-            box-shadow: 0 10px 30px rgba(0, 212, 170, 0.3);
-        }
-
-        .profile-name {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .profile-level {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-        }
-
-        .profile-xp {
-            background: var(--bg-card);
-            border-radius: 15px;
-            padding: 15px;
-            border: 1px solid var(--border);
-        }
-
-        .xp-bar {
-            width: 100%;
-            height: 8px;
-            background: var(--border);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        .xp-fill {
-            height: 100%;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            transition: width 0.5s ease;
-        }
-
-        /* Home Page Specific Styles */
-        .welcome-banner {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border-radius: 18px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            animation: fadeIn 0.7s ease-in-out;
-        }
-
-        .welcome-banner::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
-            opacity: 0.3;
-        }
-
-        .welcome-avatar-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 12px;
-        }
-
-        .progress-ring {
-            position: absolute;
-            top: -8px;
-            left: -8px;
-            width: 96px;
-            height: 96px;
-        }
-
-        .progress-ring circle {
-            fill: none;
-            stroke: var(--success);
-            stroke-width: 6;
-            stroke-linecap: round;
-            transform: rotate(-90deg);
-            transform-origin: 50% 50%;
-            transition: stroke-dashoffset 0.5s ease;
-        }
-
-        .welcome-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 8px;
-        }
-
-        .welcome-quote {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
-            font-style: italic;
-        }
-
-        .schedule-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .schedule-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .quick-add-form {
-            display: none;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid var(--border);
-        }
-
-        .quick-add-form.active {
-            display: block;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 10px;
-            }
-            .welcome-banner {
-                padding: 15px;
-            }
-            .welcome-title {
-                font-size: 20px;
-            }
-            .welcome-quote {
-                font-size: 13px;
-            }
-            .stats-grid {
-                gap: 10px;
-            }
-            .stat-card {
-                min-width: 90px;
-                padding: 10px;
-            }
-            .stat-number {
-                font-size: 16px;
-            }
-            .navigation {
-                padding: 8px;
-            }
-            .nav-item {
-                min-width: 40px;
-                padding: 6px;
-            }
-            .nav-icon {
-                font-size: 28px;
-            }
-        }
-
-        .text-center { text-align: center; }
-        .mb-20 { margin-bottom: 20px; }
-        .mb-30 { margin-bottom: 30px; }
-        .mt-20 { margin-top: 20px; }
-        .hidden { display: none; }
-        .flex { display: flex; }
-        .flex-center { display: flex; align-items: center; justify-content: center; }
-        .gap-10 { gap: 10px; }
-        .gap-15 { gap: 15px; }
-    </style>
-</head>
-<body data-theme="dark">
-    <div class="container">
-        <div class="content">
-            <!-- HOME PAGE -->
-            <div id="home" class="page active">
-                <div class="welcome-banner">
-                    <div class="welcome-avatar-container">
-                        <div class="profile-avatar" id="welcomeAvatar" role="img" aria-label="User avatar" onclick="navigateTo('profile')">
-                            <i class="fas fa-bullseye"></i>
-                        </div>
-                        <svg class="progress-ring">
-                            <circle cx="48" cy="48" r="42" stroke-dasharray="264" stroke-dashoffset="0" id="progressRing"></circle>
-                        </svg>
-                    </div>
-                    <div class="welcome-title" id="welcomeName">Hello, Student!</div>
-                    <div class="welcome-quote">"Crush your goals today!"</div>
-                </div>
-
-                <div class="stats-grid" role="navigation" aria-label="Progress statistics">
-                    <div class="stat-card" onclick="navigateTo('progress')" role="button" aria-label="View day streak">
-                        <div class="stat-icon"><i class="fas fa-fire"></i></div>
-                        <div class="stat-number" id="dayStreak">0</div>
-                        <div class="stat-label">Day Streak</div>
-                    </div>
-                    <div class="stat-card" onclick="navigateTo('progress')" role="button" aria-label="View tasks completed today">
-                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                        <div class="stat-number" id="tasksCompletedToday">0</div>
-                        <div class="stat-label">Tasks Done</div>
-                    </div>
-                    <div class="stat-card" onclick="navigateTo('progress')" role="button" aria-label="View study hours today">
-                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                        <div class="stat-number" id="studyTimeToday">0</div>
-                        <div class="stat-label">Study Hours</div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="schedule-header">
-                        <h3 class="schedule-title">Today's Schedule</h3>
-                        <button class="btn btn-small" onclick="toggleQuickAddForm()" aria-label="Toggle quick add task form">
-                            <i class="fas fa-plus"></i> Add Task
-                        </button>
-                    </div>
-                    <div class="quick-add-form" id="quickAddForm">
-                        <div class="form-group">
-                            <label class="form-label" for="quickTaskTime">Time</label>
-                            <input type="time" class="form-input" id="quickTaskTime" aria-required="true">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="quickTaskText">Task Description</label>
-                            <input type="text" class="form-input" id="quickTaskText" placeholder="Enter task..." aria-required="true">
-                        </div>
-                        <div class="flex gap-10">
-                            <button class="btn btn-small" onclick="addQuickTask()">Add</button>
-                            <button class="btn btn-small btn-secondary" onclick="toggleQuickAddForm()">Cancel</button>
-                        </div>
-                    </div>
-                    <div id="todaySchedule" class="schedule-timeline"></div>
-                </div>
-            </div>
-
-            <!-- SCHEDULER PAGE -->
-            <div id="scheduler" class="page">
-                <div class="header">
-                    <div class="page-title">Create Schedule</div>
-                </div>
-
-                <div class="quiz-container">
-                    <div class="quiz-progress" id="quizProgress"></div>
-                    
-                    <div class="card">
-                        <div id="quizSteps"></div>
-                        
-                        <div class="quiz-navigation">
-                            <button class="btn btn-secondary" id="prevBtn" onclick="prevStep()" style="display: none;">Back</button>
-                            <button class="btn" id="nextBtn" onclick="nextStep()">Next</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="schedulePreview" class="card hidden">
-                    <h3 style="margin-bottom: 20px;">Your Generated Schedule</h3>
-                    <div id="scheduleDisplay" class="schedule-timeline"></div>
-                    <button class="btn mt-20" onclick="saveSchedule()">Save Schedule</button>
-                </div>
-            </div>
-
-            <!-- TASKS PAGE -->
-            <div id="tasks" class="page">
-                <div class="header">
-                    <div class="page-title">Tasks</div>
-                </div>
-
-                <div class="card">
-                    <div id="tasksList" class="task-list">
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="fas fa-check-square"></i></div>
-                            <div class="empty-title">No Tasks Yet</div>
-                            <div class="empty-description">Create a schedule to generate your tasks!</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- REMINDERS PAGE -->
-            <div id="reminders" class="page">
-                <div class="header">
-                    <div class="page-title">Reminders</div>
-                </div>
-
-                <div class="card">
-                    <h3 style="margin-bottom: 15px;">Add Custom Reminder</h3>
-                    <div class="form-group">
-                        <label class="form-label" for="reminderTime">Time</label>
-                        <input type="time" class="form-input" id="reminderTime" aria-required="true">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="reminderText">Task Description</label>
-                        <input type="text" class="form-input" id="reminderText" placeholder="What do you need to remember?" aria-required="true">
-                    </div>
-                    <button class="btn" onclick="addReminder()">Add Reminder</button>
-                </div>
-
-                <div class="card">
-                    <h3 style="margin-bottom: 15px;">Your Reminders</h3>
-                    <div id="remindersList" class="task-list">
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="fas fa-bell"></i></div>
-                            <div class="empty-title">No Reminders</div>
-                            <div class="empty-description">Add some reminders to stay on track!</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PROGRESS PAGE -->
-            <div id="progress" class="page">
-                <div class="header">
-                    <div class="page-title">Progress</div>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalStreak">0</div>
-                        <div class="stat-label">Current Streak</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalTasksCompleted">0</div>
-                        <div class="stat-label">Total Tasks</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalXP">0</div>
-                        <div class="stat-label">Total XP</div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h3 style="margin-bottom: 15px;">Completed Tasks</h3>
-                    <div id="completedTasksList" class="task-list">
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="fas fa-trophy"></i></div>
-                            <div class="empty-title">No Completed Tasks</div>
-                            <div class="empty-description">Complete some tasks to see your progress!</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PROFILE PAGE -->
-            <div id="profile" class="page">
-                <div class="header">
-                    <div class="page-title">Profile</div>
-                    <div class="theme-selector">
-                        <div class="theme-btn dark active" data-theme="dark" role="button" aria-label="Dark Theme"></div>
-                        <div class="theme-btn light" data-theme="light" role="button" aria-label="Light Theme"></div>
-                        <div class="theme-btn white" data-theme="white" role="button" aria-label="White Theme"></div>
-                        <div class="theme-btn neon" data-theme="neon" role="button" aria-label="Neon Theme"></div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="profile-section">
-                        <div class="profile-avatar" id="profileAvatar" role="button" aria-label="Change avatar" onclick="changeAvatar()"><i class="fas fa-bullseye"></i></div>
-                        <div class="profile-name" id="profileName">Student</div>
-                        <div class="profile-level">
-                            Level <span id="profileLevel">1</span> • <span id="profileXP">0</span> XP
-                        </div>
-                        <div class="profile-xp">
-                            <div>XP Progress</div>
-                            <div class="xp-bar">
-                                <div class="xp-fill" id="xpFill" style="width: 0%"></div>
-                            </div>
-                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
-                                <span id="currentXP">0</span> / <span id="nextLevelXP">100</span> XP
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h3 style="margin-bottom: 15px;">Your Hobbies</h3>
-                    <div class="form-group">
-                        <label class="form-label" for="hobbiesInput">Add Hobbies (comma-separated)</label>
-                        <input type="text" class="form-input" id="hobbiesInput" placeholder="Reading, Gaming, Music..." aria-required="true">
-                    </div>
-                    <button class="btn" onclick="saveHobbies()">Save Hobbies</button>
-                    
-                    <div id="hobbiesList" class="mt-20">
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="fas fa-paint-brush"></i></div>
-                            <div class="empty-title">No Hobbies Added</div>
-                            <div class="empty-description">Add your hobbies to personalize your schedule!</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Navigation -->
-        <div class="navigation">
-            <div class="nav-items">
-                <div class="nav-item active" onclick="navigateTo('home')" role="button" aria-label="Home" aria-current="page">
-                    <div class="nav-icon"><i class="fas fa-home"></i></div>
-                </div>
-                <div class="nav-item" onclick="navigateTo('scheduler')" role="button" aria-label="Scheduler">
-                    <div class="nav-icon"><i class="fas fa-calendar"></i></div>
-                </div>
-                <div class="nav-item" onclick="navigateTo('tasks')" role="button" aria-label="Tasks">
-                    <div class="nav-icon"><i class="fas fa-check-square"></i></div>
-                </div>
-                <div class="nav-item" onclick="navigateTo('reminders')" role="button" aria-label="Reminders">
-                    <div class="nav-icon"><i class="fas fa-bell"></i></div>
-                </div>
-                <div class="nav-item" onclick="navigateTo('progress')" role="button" aria-label="Progress">
-                    <div class="nav-icon"><i class="fas fa-chart-bar"></i></div>
-                </div>
-                <div class="nav-item" onclick="navigateTo('profile')" role="button" aria-label="Profile">
-                    <div class="nav-icon"><i class="fas fa-user"></i></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="notification" class="notification"></div>
-
-    <script>
-        // State Management
-        const defaultState = {
-            user: { name: "Student", avatar: "fas fa-bullseye", level: 1, xp: 0, streak: 0, hobbies: [] },
-            theme: "dark",
-            schedule: [],
-            tasks: [],
-            reminders: [],
-            completedTasks: [],
-            stats: { tasksCompletedToday: 0, studyTimeToday: 0, lastReviewDate: null },
-            quizAnswers: {},
-            currentQuizStep: 0
-        };
-        let state = { ...defaultState };
-
-        const quizSteps = [
-            { id: "name", question: "What's your name?", type: "text", required: true },
-            { id: "timePreference", question: "Are you a morning person, night owl, or both?", type: "select", options: ["Morning", "Night", "Both"], required: true },
-            { id: "schoolStart", question: "What time does your school start?", type: "time", required: true },
-            { id: "schoolEnd", question: "What time does your school end?", type: "time", required: true },
-            { id: "wakeUp", question: "What time do you wake up?", type: "time", required: true },
-            { id: "bedtime", question: "What time do you go to bed?", type: "time", required: true },
-            { id: "studyIntensity", question: "What's your study intensity?", type: "select", options: ["Chill", "Balanced", "Intense"], required: true },
-            { id: "subjects", question: "What subjects are you studying? (comma-separated)", type: "text", required: true },
-            { id: "exerciseType", question: "What type of exercise do you do?", type: "select", options: ["Running", "Yoga", "Gym", "Other"], required: false },
-            { id: "exerciseDuration", question: "How long do you exercise? (minutes, min 30)", type: "number", min: 30, required: false },
-            { id: "hobbies", question: "What are your hobbies? (comma-separated)", type: "text", required: false },
-            { id: "hobbyDuration", question: "How long for hobbies? (minutes, min 60)", type: "number", min: 60, required: false },
-            { id: "breakActivity", question: "What's your preferred break activity?", type: "select", options: ["Snack", "Nap", "Walk", "Other"], required: false },
-            { id: "freeTimeActivity", question: "What do you do in your free time?", type: "select", options: ["Reading", "Netflix", "Gaming", "Other"], required: false }
-        ];
-
-        // Utility Functions
-        function sanitizeHTML(str) {
-            const div = document.createElement("div");
-            div.textContent = str || "";
-            return div.innerHTML;
-        }
-
-        function formatTime(date) {
-            return date.toTimeString().slice(0, 5);
-        }
-
-        function parseTime(timeStr) {
-            if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) {
-                throw new Error("Invalid time format");
-            }
-            const [hours, minutes] = timeStr.split(":").map(Number);
-            if (isNaN(hours) || isNaN(minutes) || hours > 23 || minutes > 59) {
-                throw new Error("Invalid time values");
-            }
-            const date = new Date();
-            date.setHours(hours, minutes, 0, 0);
-            return date;
-        }
-
-        function addMinutes(time, minutes) {
-            try {
-                const date = parseTime(time);
-                date.setMinutes(date.getMinutes() + minutes);
-                return formatTime(date);
-            } catch (e) {
-                showNotification("Invalid time calculation!", "error");
-                return time;
-            }
-        }
-
-        function showNotification(message, type = "success") {
-            const notification = document.getElementById("notification");
-            clearTimeout(notification.timeout);
-            notification.textContent = sanitizeHTML(message);
-            notification.className = `notification ${type} show`;
-            notification.timeout = setTimeout(() => {
-                notification.className = "notification";
-            }, 3000);
-        }
-
-        function saveState() {
-            try {
-                localStorage.setItem("studyFlowState", JSON.stringify(state));
-            } catch (e) {
-                showNotification("Failed to save data. Storage may be full or disabled.", "error");
-            }
-        }
-
-        function loadState() {
-            try {
-                const savedState = localStorage.getItem("studyFlowState");
-                if (savedState) {
-                    state = { ...defaultState, ...JSON.parse(savedState) };
-                    applyTheme();
-                    updateUI();
-                }
-            } catch (e) {
-                showNotification("Failed to load data. Starting with default settings.", "error");
-            }
-        }
-
-        function resetDaily() {
-            const today = new Date().toDateString();
-            if (state.stats.lastReviewDate !== today) {
-                const completedToday = state.tasks.some(task => task.completed);
-                state.tasks = state.tasks.filter(task => !task.completed);
-                state.reminders = state.reminders.filter(reminder => !reminder.completed);
-                state.stats.tasksCompletedToday = 0;
-                state.stats.studyTimeToday = 0;
-                state.stats.lastReviewDate = today;
-                if (completedToday) {
-                    state.user.streak++;
-                    showNotification("Streak increased!");
-                } else if (state.tasks.length > 0) {
-                    state.user.streak = 0;
-                }
-                saveState();
-                updateUI();
-            }
-        }
-
-        // Theme Management
-        function applyTheme() {
-            document.body.setAttribute("data-theme", state.theme);
-            document.querySelectorAll(".theme-btn").forEach(btn => {
-                btn.classList.toggle("active", btn.getAttribute("data-theme") === state.theme);
-            });
-        }
-
-        document.querySelectorAll(".theme-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                state.theme = btn.getAttribute("data-theme");
-                applyTheme();
-                saveState();
-                showNotification(`Theme changed to ${state.theme}!`);
-            });
-        });
-
-        // Navigation
-        function navigateTo(pageId) {
-            document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
-            document.getElementById(pageId).classList.add("active");
-            document.querySelectorAll(".nav-item").forEach(item => {
-                item.classList.toggle("active", item.getAttribute("onclick").includes(pageId));
-                item.removeAttribute("aria-current");
-                if (item.getAttribute("onclick").includes(pageId)) {
-                    item.setAttribute("aria-current", "page");
-                }
-            });
-            resetDaily();
-            updateUI();
-        }
-
-        // Quiz Management
-        function validateStep(stepIndex) {
-            const step = quizSteps[stepIndex];
-            const input = document.getElementById(step.id);
-            const value = input.value.trim();
-
-            if (step.required && !value) {
-                showNotification(`${step.question} is required!`, "error");
-                return false;
-            }
-
-            if (step.type === "number" && value && parseInt(value) < step.min) {
-                showNotification(`Minimum value for ${step.question} is ${step.min}!`, "error");
-                return false;
-            }
-
-            if (step.id === "schoolEnd" && state.quizAnswers.schoolStart) {
-                const start = parseTime(state.quizAnswers.schoolStart);
-                const end = parseTime(value);
-                if (end <= start) {
-                    showNotification("School end time must be after start time!", "error");
-                    return false;
-                }
-            }
-
-            if (step.id === "bedtime" && state.quizAnswers.wakeUp) {
-                const wakeUp = parseTime(state.quizAnswers.wakeUp);
-                const bedtime = parseTime(value);
-                const wakeUpMinutes = wakeUp.getHours() * 60 + wakeUp.getMinutes();
-                const bedtimeMinutes = bedtime.getHours() * 60 + bedtime.getMinutes();
-                if (bedtimeMinutes <= wakeUpMinutes) {
-                    showNotification("Bedtime must be after wake-up time (considering next day)!", "error");
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        function renderQuiz() {
-            const quizStepsContainer = document.getElementById("quizSteps");
-            const fragment = document.createDocumentFragment();
-            quizSteps.forEach((step, index) => {
-                const stepElement = document.createElement("div");
-                stepElement.className = `quiz-step ${index === state.currentQuizStep ? 'active' : ''}`;
-                stepElement.setAttribute("data-step", index);
-                stepElement.innerHTML = `
-                    <div class="form-group">
-                        <label class="form-label" for="${step.id}">${sanitizeHTML(step.question)}</label>
-                        ${step.type === "text" ? `<input type="text" class="form-input" id="${step.id}" value="${sanitizeHTML(state.quizAnswers[step.id] || '')}" ${step.required ? 'required' : ''} aria-required="${step.required}">` :
-                         step.type === "number" ? `<input type="number" class="form-input" id="${step.id}" value="${sanitizeHTML(state.quizAnswers[step.id] || '')}" min="${step.min || 0}" ${step.required ? 'required' : ''} aria-required="${step.required}">` :
-                         step.type === "time" ? `<input type="time" class="form-input" id="${step.id}" value="${sanitizeHTML(state.quizAnswers[step.id] || '')}" ${step.required ? 'required' : ''} aria-required="${step.required}">` :
-                         `<select class="form-select" id="${step.id}" ${step.required ? 'required' : ''} aria-required="${step.required}">
-                            <option value="">Select...</option>
-                            ${step.options.map(opt => `<option value="${opt}" ${state.quizAnswers[step.id] === opt ? 'selected' : ''}>${sanitizeHTML(opt)}</option>`).join('')}
-                          </select>`}
-                    </div>
-                `;
-                fragment.appendChild(stepElement);
-            });
-            quizStepsContainer.innerHTML = "";
-            quizStepsContainer.appendChild(fragment);
-
-            const quizProgress = document.getElementById("quizProgress");
-            quizProgress.innerHTML = quizSteps.map((_, index) => `
-                <div class="progress-dot ${index === state.currentQuizStep ? 'active' : index < state.currentQuizStep ? 'completed' : ''}"></div>
-            `).join('');
-
-            const prevBtn = document.getElementById("prevBtn");
-            const nextBtn = document.getElementById("nextBtn");
-            prevBtn.style.display = state.currentQuizStep === 0 ? "none" : "inline-flex";
-            nextBtn.textContent = state.currentQuizStep === quizSteps.length - 1 ? "Finish" : "Next";
-            nextBtn.disabled = !validateStep(state.currentQuizStep);
-
-            document.getElementById(quizSteps[state.currentQuizStep].id).addEventListener("input", () => {
-                nextBtn.disabled = !validateStep(state.currentQuizStep);
-            });
-        }
-
-        function prevStep() {
-            if (state.currentQuizStep > 0) {
-                state.currentQuizStep--;
-                renderQuiz();
-            }
-        }
-
-        function nextStep() {
-            const currentStep = quizSteps[state.currentQuizStep];
-            const input = document.getElementById(currentStep.id);
-            state.quizAnswers[currentStep.id] = input.value.trim();
-
-            if (!validateStep(state.currentQuizStep)) return;
-
-            if (state.currentQuizStep < quizSteps.length - 1) {
-                state.currentQuizStep++;
-                renderQuiz();
-            } else {
-                generateSchedule();
-                document.getElementById("quizSteps").classList.add("hidden");
-                document.getElementById("quizProgress").classList.add("hidden");
-                document.getElementById("prevBtn").style.display = "none";
-                document.getElementById("nextBtn").style.display = "none";
-                document.getElementById("schedulePreview").classList.remove("hidden");
-            }
-        }
-
-        function generateSchedule() {
-            const { wakeUp, bedtime, schoolStart, schoolEnd, subjects, studyIntensity, exerciseType, exerciseDuration, hobbies, hobbyDuration, breakActivity, freeTimeActivity, timePreference } = state.quizAnswers;
-            state.schedule = [];
-            let currentTime = wakeUp;
-            const bedtimeDate = bedtime ? parseTime(bedtime) : null;
-
-            const addTask = (title, description, duration, iconClass) => {
-                if (bedtimeDate && parseTime(currentTime) >= bedtimeDate) return false;
-                const taskId = `${currentTime}-${title}-${Date.now()}`;
-                state.schedule.push({ id: taskId, time: currentTime, title, description, duration, iconClass, completed: false });
-                currentTime = addMinutes(currentTime, duration);
-                return true;
-            };
-
-            addTask("Wake Up", "Start your day!", 0, "fas fa-sun");
-            addTask("Morning Routine", "Get ready for the day", 30, "fas fa-tooth");
-
-            if ((timePreference === "Morning" || timePreference === "Both") && exerciseType && exerciseDuration) {
-                addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()}`, parseInt(exerciseDuration), "fas fa-dumbbell");
-            }
-
-            if (schoolStart && parseTime(currentTime) < parseTime(schoolStart)) {
-                addTask("Free Time", freeTimeActivity || "Relax", 45, "fas fa-party-horn");
-                currentTime = schoolStart;
-            }
-
-            if (schoolStart && schoolEnd) {
-                addTask("School", "Attend classes", Math.round((parseTime(schoolEnd) - parseTime(schoolStart)) / 60000), "fas fa-school");
-                currentTime = schoolEnd;
-            }
-
-            addTask("Lunch Break", "Enjoy your meal", 45, "fas fa-utensils");
-            currentTime = addMinutes(currentTime, 45);
-
-            if (subjects) {
-                const subjectsList = subjects.split(",").map(s => s.trim()).filter(s => s);
-                const studyDuration = studyIntensity === "Chill" ? 30 : studyIntensity === "Balanced" ? 45 : 60;
-                subjectsList.forEach(subject => {
-                    if (!addTask(`Study: ${subject}`, `Focus on ${subject}`, studyDuration, "fas fa-book")) return;
-                    addTask(breakActivity || "Break", "Take a short break", 10, "fas fa-coffee");
-                });
-            }
-
-            if ((timePreference === "Night" || timePreference === "Both") && exerciseType && exerciseDuration) {
-                addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()}`, parseInt(exerciseDuration), "fas fa-dumbbell");
-            }
-
-            if (hobbies && hobbyDuration) {
-                const hobbiesList = hobbies.split(",").map(h => h.trim()).filter(h => h);
-                addTask("Hobbies", `Enjoy ${hobbiesList.join(", ")}`, parseInt(hobbyDuration), "fas fa-paint-brush");
-            }
-
-            addTask("Free Time", freeTimeActivity || "Relax", 45, "fas fa-party-horn");
-            addTask("Bedtime", "Get some rest", 0, "fas fa-bed");
-
-            state.schedule.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-            renderSchedule();
-        }
-
-        function renderSchedule() {
-            const scheduleDisplay = document.getElementById("scheduleDisplay");
-            const fragment = document.createDocumentFragment();
-            state.schedule.forEach(item => {
-                const scheduleItem = document.createElement("div");
-                scheduleItem.className = "schedule-item";
-                scheduleItem.innerHTML = `
-                    <div class="schedule-time">${sanitizeHTML(item.time)}</div>
-                    <div class="schedule-dot"></div>
-                    < charity:style="width: 24px; height: 24px; border: 3px solid var(--bg-dark);"></div>
-                    <div class="task-item ${item.completed ? 'completed' : ''}">
-                        <div class="task-checkbox ${item.completed ? 'checked' : ''}" role="checkbox" aria-checked="${item.completed}" onclick="toggleTask('${item.id}')"></div>
-                        <div class="task-content">
-                            <div class="task-title">${sanitizeHTML(item.title)}</div>
-                            <div class="task-meta">
-                                <span class="task-time">${sanitizeHTML(item.time)}</span>
-                                <span class="task-duration">${item.duration} min</span>
-                                <span class="fa-icon"><i class="${sanitizeHTML(item.iconClass)}"></i></span>
-                            </div>
-                            <div>${sanitizeHTML(item.description)}</div>
-                        </div>
-                    </div>
-                `;
-                fragment.appendChild(scheduleItem);
-            });
-            scheduleDisplay.innerHTML = "";
-            scheduleDisplay.appendChild(fragment);
-        }
-
-        function saveSchedule() {
-            state.tasks = state.schedule.map(item => ({ ...item, type: inferTaskType(item.title) }));
-            state.reminders = state.tasks.map(task => ({ ...task, id: `${task.time}-${task.title}-${Date.now()}` }));
-            state.user.hobbies = state.quizAnswers.hobbies ? state.quizAnswers.hobbies.split(",").map(h => h.trim()).filter(h => h) : [];
-            state.user.name = state.quizAnswers.name || "Student";
-            state.currentQuizStep = 0;
-            state.quizAnswers = {};
-            saveState();
-            showNotification("Schedule saved successfully!");
-            navigateTo("home");
-        }
-
-        // Task Management
-        function inferTaskType(title) {
-            if (title.toLowerCase().includes("study")) return "study";
-            if (title.toLowerCase().includes("exercise")) return "exercise";
-            if (title.toLowerCase().includes("hobbies")) return "hobby";
-            if (title.toLowerCase().includes("break") || title.toLowerCase().includes("lunch")) return "break";
-            if (title.toLowerCase().includes("free time")) return "free";
-            return "custom";
-        }
-
-        function toggleTask(taskId) {
-            const task = state.tasks.find(t => t.id === taskId);
-            const reminder = state.reminders.find(r => r.id === taskId);
-            const scheduleItem = state.schedule.find(s => s.id === taskId);
-
-            if (task && scheduleItem) {
-                task.completed = !task.completed;
-                scheduleItem.completed = task.completed;
-                if (reminder) reminder.completed = task.completed;
-
-                if (task.completed) {
-                    state.stats.tasksCompletedToday++;
-                    if (task.type === "study") state.stats.studyTimeToday += task.duration / 60;
-                    state.user.xp += 10;
-                    state.completedTasks.push({ ...task, completionDate: new Date().toDateString() });
-                    if (state.completedTasks.length > 20) state.completedTasks.shift();
-                    if (state.tasks.every(t => t.completed)) {
-                        state.user.streak++;
-                        state.stats.tasksCompletedToday = state.tasks.length;
-                        state.tasks = [];
-                        state.reminders = [];
-                        state.schedule = [];
-                        showNotification("All tasks completed! Streak increased!");
-                    } else {
-                        showNotification("Task completed! +10 XP");
-                    }
-                } else {
-                    state.stats.tasksCompletedToday = Math.max(0, state.stats.tasksCompletedToday - 1);
-                    if (task.type === "study") state.stats.studyTimeToday = Math.max(0, state.stats.studyTimeToday - task.duration / 60);
-                    state.user.xp = Math.max(0, state.user.xp - 10);
-                    state.completedTasks = state.completedTasks.filter(t => t.id !== taskId);
-                    showNotification("Task unmarked.");
-                }
-
-                state.user.level = Math.floor(state.user.xp / 100) + 1;
-                if (state.user.level > 1 && state.user.xp % 100 === 0) {
-                    showNotification(`Level up! You are now Level ${state.user.level}!`);
-                }
-                saveState();
-                updateUI();
-            }
-        }
-
-        function deleteTask(taskId) {
-            state.tasks = state.tasks.filter(t => t.id !== taskId);
-            state.schedule = state.schedule.filter(s => s.id !== taskId);
-            state.reminders = state.reminders.filter(r => r.id !== taskId);
-            saveState();
-            showNotification("Task deleted!");
-            updateUI();
-        }
-
-        function renderTasks() {
-            const tasksList = document.getElementById("tasksList");
-            const fragment = document.createDocumentFragment();
-            if (state.tasks.length) {
-                state.tasks.forEach(task => {
-                    const taskElement = document.createElement("div");
-                    taskElement.className = `task-item ${task.completed ? 'completed' : ''}`;
-                    taskElement.innerHTML = `
-                        <div class="task-checkbox ${task.completed ? 'checked' : ''}" role="checkbox" aria-checked="${task.completed}" onclick="toggleTask('${task.id}')"></div>
-                        <div class="task-content">
-                            <div class="task-title">${sanitizeHTML(task.title)}</div>
-                            <div class="task-meta">
-                                <span class="task-time">${sanitizeHTML(task.time)}</span>
-                                <span class="task-duration">${task.duration} min</span>
-                                <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
-                            </div>
-                            <div>${sanitizeHTML(task.description)}</div>
-                        </div>
-                        <button class="btn btn-small btn-secondary" onclick="deleteTask('${task.id}')">Remove</button>
-                    `;
-                    fragment.appendChild(taskElement);
-                });
-            } else {
-                const emptyState = document.createElement("div");
-                emptyState.className = "empty-state";
-                emptyState.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-check-square"></i></div>
-                    <div class="empty-title">No Tasks Yet</div>
-                    <div class="empty-description">Create a schedule to generate your tasks!</div>
-                `;
-                fragment.appendChild(emptyState);
-            }
-            tasksList.innerHTML = "";
-            tasksList.appendChild(fragment);
-        }
-
-        // Reminder Management
-        function addReminder() {
-            const time = document.getElementById("reminderTime").value;
-            const text = document.getElementById("reminderText").value.trim();
-
-            if (!time || !text) {
-                showNotification("Please enter both time and task description!", "error");
-                return;
-            }
-
-            const reminderId = `${time}-${text}-${Date.now()}`;
-            const reminder = {
-                id: reminderId,
-                time,
-                title: text,
-                description: text,
-                duration: 30,
-                iconClass: inferTaskType(text) === "study" ? "fas fa-book" : inferTaskType(text) === "exercise" ? "fas fa-dumbbell" : inferTaskType(text) === "hobby" ? "fas fa-paint-brush" : "fas fa-bell",
-                completed: false,
-                type: inferTaskType(text)
-            };
-
-            state.reminders.push(reminder);
-            state.tasks.push({ ...reminder });
-            state.reminders.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-            state.tasks.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-            saveState();
-            showNotification("Reminder added!");
-            document.getElementById("reminderTime").value = "";
-            document.getElementById("reminderText").value = "";
-            renderReminders();
-        }
-
-        function deleteReminder(id) {
-            const reminder = state.reminders.find(r => r.id === id);
-            if (reminder) {
-                state.reminders = state.reminders.filter(r => r.id !== id);
-                state.tasks = state.tasks.filter(t => t.id !== id);
-                saveState();
-                showNotification("Reminder deleted!");
-                renderReminders();
-            }
-        }
-
-        function renderReminders() {
-            const remindersList = document.getElementById("remindersList");
-            const fragment = document.createDocumentFragment();
-            if (state.reminders.length) {
-                state.reminders.forEach(reminder => {
-                    const reminderElement = document.createElement("div");
-                    reminderElement.className = `task-item ${reminder.completed ? 'completed' : ''}`;
-                    reminderElement.innerHTML = `
-                        <div class="task-checkbox ${reminder.completed ? 'checked' : ''}" role="checkbox" aria-checked="${reminder.completed}" onclick="toggleTask('${reminder.id}')"></div>
-                        <div class="task-content">
-                            <div class="task-title">${sanitizeHTML(reminder.title)}</div>
-                            <div class="task-meta">
-                                <span class="task-time">${sanitizeHTML(reminder.time)}</span>
-                                <span class="task-duration">${reminder.duration} min</span>
-                                <span class="fa-icon"><i class="${sanitizeHTML(reminder.iconClass)}"></i></span>
-                            </div>
-                            <div>${sanitizeHTML(reminder.description)}</div>
-                        </div>
-                        <button class="btn btn-small btn-secondary" onclick="deleteReminder('${reminder.id}')">Remove</button>
-                    `;
-                    fragment.appendChild(reminderElement);
-                });
-            } else {
-                const emptyState = document.createElement("div");
-                emptyState.className = "empty-state";
-                emptyState.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-bell"></i></div>
-                    <div class="empty-title">No Reminders</div>
-                    <div class="empty-description">Add some reminders to stay on track!</div>
-                `;
-                fragment.appendChild(emptyState);
-            }
-            remindersList.innerHTML = "";
-            remindersList.appendChild(fragment);
-        }
-
-        // Progress Management
-        function renderProgress() {
-            document.getElementById("totalStreak").textContent = state.user.streak;
-            document.getElementById("totalTasksCompleted").textContent = state.completedTasks.length;
-            document.getElementById("totalXP").textContent = state.user.xp;
-
-            const completedTasksList = document.getElementById("completedTasksList");
-            const fragment = document.createDocumentFragment();
-            if (state.completedTasks.length) {
-                state.completedTasks.forEach(task => {
-                    const taskElement = document.createElement("div");
-                    taskElement.className = "task-item completed";
-                    taskElement.innerHTML = `
-                        <div class="task-checkbox checked" role="checkbox" aria-checked="true"></div>
-                        <div class="task-content">
-                            <div class="task-title">${sanitizeHTML(task.title)}</div>
-                            <div class="task-meta">
-                                <span class="task-time">${sanitizeHTML(task.time)}</span>
-                                <span class="task-duration">${task.duration} min</span>
-                                <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
-                            </div>
-                            <div>${sanitizeHTML(task.description)} (Completed: ${sanitizeHTML(task.completionDate)})</div>
-                        </div>
-                    `;
-                    fragment.appendChild(taskElement);
-                });
-            } else {
-                const emptyTasksList = document.createElement("div");
-                emptyTasksList.className = "empty-state";
-                emptyTasksList.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-trophy"></i></div>
-                    <div class="empty-title">No Completed Tasks</div>
-                    <div class="empty-description">Complete some tasks to see your progress!</div>
-                `;
-                fragment.appendChild(emptyTasksList);
-            }
-            completedTasksList.innerHTML = "";
-            completedTasksList.appendChild(fragment);
-        }
-
-        // Profile Management
-        function changeAvatar() {
-            const avatars = ["fas fa-bullseye", "fas fa-rocket", "fas fa-bolt"];
-            let currentIndex = avatars.indexOf(state.user.avatar);
-            state.user.avatar = avatars[(currentIndex + 1) % avatars.length];
-            saveState();
-            showNotification("Avatar changed!");
-            updateUI();
-        }
-
-        function saveHobbies() {
-            const hobbiesInput = document.getElementById("hobbiesInput").value.trim();
-            if (hobbiesInput) {
-                state.user.hobbies = hobbiesInput.split(",").map(h => h.trim()).filter(h => h);
-                document.getElementById("hobbiesInput").value = "";
-                saveState();
-                showNotification("Hobbies saved!");
-                renderHobbies();
-            } else {
-                showNotification("Please enter at least one hobby!", "error");
-            }
-        }
-
-        function renderHobbies() {
-            const hobbiesList = document.getElementById("hobbiesList");
-            const fragment = document.createDocumentFragment();
-            if (state.user.hobbies.length) {
-                state.user.hobbies.forEach(hobby => {
-                    const hobbyElement = document.createElement("div");
-                    hobbyElement.className = "task-item";
-                    hobbyElement.innerHTML = `
-                        <div class="task-content">
-                            <div class="task-title">${sanitizeHTML(hobby)}</div>
-                            <div class="fa-icon"><i class="fas fa-paint-brush"></i></div>
-                        </div>
-                    `;
-                    fragment.appendChild(hobbyElement);
-                });
-            } else {
-                const emptyState = document.createElement("div");
-                emptyState.className = "empty-state";
-                emptyState.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-paint-brush"></i></div>
-                    <div class="empty-title">No Hobbies Added</div>
-                    <div class="empty-description">Add your hobbies to personalize your schedule!</div>
-                `;
-                fragment.appendChild(emptyState);
-            }
-            hobbiesList.innerHTML = "";
-            hobbiesList.appendChild(fragment);
-        }
-
-        // Home Page Specific Functions
-        function toggleQuickAddForm() {
-            const form = document.getElementById("quickAddForm");
-            form.classList.toggle("active");
-            if (form.classList.contains("active")) {
-                document.getElementById("quickTaskTime").focus();
-            } else {
-                document.getElementById("quickTaskTime").value = "";
-                document.getElementById("quickTaskText").value = "";
-            }
-        }
-
-        function addQuickTask() {
-            const time = document.getElementById("quickTaskTime").value;
-            const text = document.getElementById("quickTaskText").value.trim();
-
-            if (!time || !text) {
-                showNotification("Please enter both time and task description!", "error");
-                return;
-            }
-
-            const taskId = `${time}-${text}-${Date.now()}`;
-            const task = {
-                id: taskId,
-                time,
-                title: text,
-                description: text,
-                duration: 30,
-                iconClass: inferTaskType(text) === "study" ? "fas fa-book" : inferTaskType(text) === "exercise" ? "fas fa-dumbbell" : inferTaskType(text) === "hobby" ? "fas fa-paint-brush" : "fas fa-bell",
-                completed: false,
-                type: inferTaskType(text)
-            };
-
-            state.tasks.push(task);
-            state.schedule.push(task);
-            state.reminders.push({ ...task, id: `${time}-${text}-${Date.now()}` });
-            state.tasks.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-            state.schedule.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-            state.reminders.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-            saveState();
-            showNotification("Task added!");
-            document.getElementById("quickTaskTime").value = "";
-            document.getElementById("quickTaskText").value = "";
-            toggleQuickAddForm();
-            updateUI();
-        }
-
-        // UI Updates
-        function updateUI() {
-            document.getElementById("welcomeName").textContent = `Hello, ${sanitizeHTML(state.user.name)}!`;
-            document.getElementById("welcomeAvatar").innerHTML = `<i class="${sanitizeHTML(state.user.avatar)}"></i>`;
-            document.getElementById("dayStreak").textContent = state.user.streak;
-            document.getElementById("tasksCompletedToday").textContent = state.stats.tasksCompletedToday;
-            document.getElementById("studyTimeToday").textContent = state.stats.studyTimeToday.toFixed(1);
-
-            // Update progress ring
-            const progressRing = document.getElementById("progressRing");
-            const xpProgress = (state.user.xp % 100) / 100;
-            const circumference = 264; // 2 * π * 42
-            progressRing.style.strokeDashoffset = circumference * (1 - xpProgress);
-
-            const todaySchedule = document.getElementById("todaySchedule");
-            const upcomingTasks = state.tasks.filter(task => !task.completed).slice(0, 5);
-            const fragment = document.createDocumentFragment();
-            if (upcomingTasks.length) {
-                upcomingTasks.forEach(task => {
-                    const scheduleItem = document.createElement("div");
-                    scheduleItem.className = "schedule-item";
-                    scheduleItem.innerHTML = `
-                        <div class="schedule-time">${sanitizeHTML(task.time)}</div>
-                        <div class="schedule-dot"></div>
-                        <div class="task-item ${task.completed ? 'completed' : ''} ${task.type}">
-                            <div class="task-checkbox ${task.completed ? 'checked' : ''}" role="checkbox" aria-checked="${task.completed}" onclick="toggleTask('${task.id}')"></div>
-                            <div class="task-content">
-                                <div class="task-title">${sanitizeHTML(task.title)}</div>
-                                <div class="task-meta">
-                                    <span class="task-time">${sanitizeHTML(task.time)}</span>
-                                    <span class="task-duration">${task.duration} min</span>
-                                    <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
-                                </div>
-                                <div>${sanitizeHTML(task.description)}</div>
-                            </div>
-                        </div>
-                    `;
-                    fragment.appendChild(scheduleItem);
-                });
-            } else {
-                const emptyState = document.createElement("div");
-                emptyState.className = "empty-state";
-                emptyState.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-calendar"></i></div>
-                    <div class="empty-title">No Schedule Yet</div>
-                    <div class="empty-description">Create your daily schedule to get started!</div>
-                    <button class="btn mt-20" onclick="navigateTo('scheduler')">Create Schedule</button>
-                `;
-                fragment.appendChild(emptyState);
-            }
-            todaySchedule.innerHTML = "";
-            todaySchedule.appendChild(fragment);
-
-            document.getElementById("profileName").textContent = sanitizeHTML(state.user.name);
-            document.getElementById("profileAvatar").innerHTML = `<i class="${sanitizeHTML(state.user.avatar)}"></i>`;
-            document.getElementById("profileLevel").textContent = state.user.level;
-            document.getElementById("profileXP").textContent = state.user.xp;
-            document.getElementById("currentXP").textContent = state.user.xp % 100;
-            document.getElementById("nextLevelXP").textContent = 100;
-            document.getElementById("xpFill").style.width = `${(state.user.xp % 100)}%`;
-
-            renderTasks();
-            renderReminders();
-            renderProgress();
-            renderHobbies();
-        }
-
-        // Initialize
-        loadState();
-        renderQuiz();
-        updateUI();
-    </script>
-</body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StudyFlow - Complete Student Productivity App</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -1891,9 +69,9 @@
         }
 
         .container {
-            max-width: 460px;
+            max-width: 430px;
             margin: 0 auto;
-            padding: 0 15px;
+            padding: 0 20px;
             position: relative;
         }
 
@@ -1916,11 +94,6 @@
             to { opacity: 1; transform: translateX(0); }
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-        }
-
         .header {
             display: flex;
             justify-content: space-between;
@@ -1937,16 +110,6 @@
             background-clip: text;
         }
 
-        .app-title {
-            font-size: 36px;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: pulse 2s infinite ease-in-out;
-            letter-spacing: 1px;
-        }
-
         .theme-selector {
             display: flex;
             gap: 8px;
@@ -1961,10 +124,10 @@
             transition: all 0.3s ease;
         }
 
-        .theme-btn.dark { background: var(--bg-dark, #0a0a0a); }
-        .theme-btn.light { background: var(--bg-dark, #ffffff); }
-        .theme-btn.white { background: var(--bg-dark, #fefefe); }
-        .theme-btn.neon { background: linear-gradient(45deg, var(--accent-primary, #00ffff), var(--accent-secondary, #ff00ff)); }
+        .theme-btn.dark { background: #0a0a0a; }
+        .theme-btn.light { background: #ffffff; }
+        .theme-btn.white { background: #fefefe; }
+        .theme-btn.neon { background: linear-gradient(45deg, #00ffff, #ff00ff); }
 
         .theme-btn.active {
             border-color: var(--accent-primary);
@@ -1977,9 +140,8 @@
             padding: 20px;
             margin-bottom: 20px;
             border: 1px solid var(--border);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(20px);
             transition: all 0.3s ease;
-            animation: fadeIn 0.5s ease-in-out;
         }
 
         .card:hover {
@@ -1988,34 +150,20 @@
         }
 
         .stats-grid {
-            display: flex;
-            overflow-x: auto;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            scrollbar-width: thin;
-            scrollbar-color: var(--accent-primary) var(--bg-card);
-        }
-
-        .stats-grid::-webkit-scrollbar {
-            height: 6px;
-        }
-
-        .stats-grid::-webkit-scrollbar-thumb {
-            background: var(--accent-primary);
-            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
         }
 
         .stat-card {
             background: var(--bg-card);
             border-radius: 18px;
-            padding: 12px;
+            padding: 20px;
             text-align: center;
             border: 1px solid var(--border);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(20px);
             transition: all 0.3s ease;
-            min-width: 100px;
-            cursor: pointer;
         }
 
         .stat-card:hover {
@@ -2024,19 +172,14 @@
             box-shadow: 0 15px 40px rgba(0, 212, 170, 0.2);
         }
 
-        .stat-icon {
+        .stat-number {
             font-size: 24px;
-            margin-bottom: 8px;
+            font-weight: 700;
+            margin-bottom: 5px;
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-
-        .stat-number {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            color: var(--text-primary);
+            background-clip: text;
         }
 
         .stat-label {
@@ -2056,21 +199,14 @@
         .task-item {
             background: var(--bg-card);
             border-radius: 18px;
-            padding: 15px;
+            padding: 20px;
             border: 1px solid var(--border);
             transition: all 0.3s ease;
             position: relative;
             display: flex;
             align-items: flex-start;
-            gap: 12px;
+            gap: 15px;
         }
-
-        .task-item.study::before { background: var(--accent-primary); }
-        .task-item.exercise::before { background: var(--accent-orange); }
-        .task-item.hobby::before { background: var(--accent-pink); }
-        .task-item.break::before { background: var(--warning); }
-        .task-item.free::before { background: var(--accent-secondary); }
-        .task-item.custom::before { background: var(--text-secondary); }
 
         .task-item::before {
             content: '';
@@ -2079,6 +215,7 @@
             left: 0;
             width: 4px;
             height: 100%;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             opacity: 0;
             transition: opacity 0.3s ease;
             border-radius: 18px 0 0 18px;
@@ -2103,8 +240,8 @@
         }
 
         .task-checkbox {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             border: 2px solid var(--border);
             border-radius: 6px;
             cursor: pointer;
@@ -2119,11 +256,9 @@
         }
 
         .task-checkbox.checked::after {
-            content: '\f00c';
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
+            content: '✓';
             color: white;
-            font-size: 10px;
+            font-size: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2132,25 +267,21 @@
 
         .task-content {
             flex: 1;
-            overflow: hidden;
         }
 
         .task-title {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
             line-height: 1.3;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .task-meta {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-secondary);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .task-time {
@@ -2160,16 +291,14 @@
         .task-duration {
             background: rgba(0, 212, 170, 0.1);
             color: var(--accent-primary);
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
             font-weight: 500;
         }
 
-        .fa-icon {
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            font-size: 20px;
+        .task-emoji {
+            font-size: 24px;
             margin-top: -2px;
         }
 
@@ -2177,16 +306,16 @@
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 15px;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .btn:hover {
@@ -2196,11 +325,6 @@
 
         .btn:active {
             transform: translateY(0);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
         }
 
         .btn-secondary {
@@ -2234,12 +358,12 @@
 
         .form-input {
             width: 100%;
-            padding: 12px;
+            padding: 15px;
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 12px;
             background: var(--bg-card);
             color: var(--text-primary);
-            font-size: 15px;
+            font-size: 16px;
             transition: all 0.3s ease;
         }
 
@@ -2251,12 +375,12 @@
 
         .form-select {
             width: 100%;
-            padding: 12px;
+            padding: 15px;
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 12px;
             background: var(--bg-card);
             color: var(--text-primary);
-            font-size: 15px;
+            font-size: 16px;
             cursor: pointer;
         }
 
@@ -2319,7 +443,7 @@
 
         .schedule-item {
             position: relative;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             padding-left: 80px;
         }
 
@@ -2352,13 +476,12 @@
             transform: translateX(-50%);
             background: var(--bg-card);
             border-radius: 25px 25px 0 0;
-            padding: 12px;
+            padding: 20px 0 30px;
             width: 100%;
-            max-width: 460px;
-            height: 80px;
-            border: 2px solid var(--border);
+            max-width: 430px;
+            border: 1px solid var(--border);
             border-bottom: none;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(20px);
             z-index: 1000;
         }
 
@@ -2366,19 +489,18 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            gap: 12px;
-            height: 100%;
         }
 
         .nav-item {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
+            gap: 5px;
             cursor: pointer;
             transition: all 0.3s ease;
-            padding: 8px;
-            border-radius: 14px;
-            min-width: 48px;
+            padding: 10px;
+            border-radius: 12px;
+            min-width: 60px;
         }
 
         .nav-item.active {
@@ -2386,15 +508,24 @@
         }
 
         .nav-icon {
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            font-size: 32px;
+            font-size: 20px;
             transition: all 0.3s ease;
         }
 
         .nav-item.active .nav-icon {
             color: var(--accent-primary);
             transform: scale(1.1);
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+
+        .nav-item.active .nav-label {
+            color: var(--accent-primary);
         }
 
         .content {
@@ -2411,7 +542,7 @@
             padding: 15px 20px;
             max-width: 300px;
             z-index: 1001;
-            transform: translateX(100%);
+            transform: translateX(400px);
             opacity: 0;
             transition: all 0.3s ease;
         }
@@ -2433,33 +564,31 @@
 
         .empty-state {
             text-align: center;
-            padding: 30px 15px;
+            padding: 40px 20px;
             color: var(--text-secondary);
         }
 
         .empty-icon {
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            font-size: 40px;
-            margin-bottom: 12px;
+            font-size: 48px;
+            margin-bottom: 15px;
             opacity: 0.5;
         }
 
         .empty-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
             margin-bottom: 8px;
             color: var(--text-primary);
         }
 
         .empty-description {
-            font-size: 13px;
+            font-size: 14px;
             line-height: 1.5;
         }
 
         .profile-section {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         .profile-avatar {
@@ -2470,13 +599,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
             font-size: 36px;
-            margin: 0 auto 12px;
+            margin: 0 auto 15px;
             cursor: pointer;
             transition: all 0.3s ease;
-            position: relative;
         }
 
         .profile-avatar:hover {
@@ -2485,15 +611,15 @@
         }
 
         .profile-name {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
             margin-bottom: 5px;
         }
 
         .profile-level {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-secondary);
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
 
         .profile-xp {
@@ -2518,123 +644,21 @@
             transition: width 0.5s ease;
         }
 
-        /* Home Page Specific Styles */
-        .welcome-banner {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border-radius: 18px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            animation: fadeIn 0.7s ease-in-out;
-        }
-
-        .welcome-banner::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
-            opacity: 0.3;
-        }
-
-        .welcome-avatar-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 12px;
-        }
-
-        .progress-ring {
-            position: absolute;
-            top: -8px;
-            left: -8px;
-            width: 96px;
-            height: 96px;
-        }
-
-        .progress-ring circle {
-            fill: none;
-            stroke: var(--success);
-            stroke-width: 6;
-            stroke-linecap: round;
-            transform: rotate(-90deg);
-            transform-origin: 50% 50%;
-            transition: stroke-dashoffset 0.5s ease;
-        }
-
-        .welcome-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 8px;
-        }
-
-        .welcome-quote {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
-            font-style: italic;
-        }
-
-        .schedule-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .schedule-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .quick-add-form {
-            display: none;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid var(--border);
-        }
-
-        .quick-add-form.active {
-            display: block;
-            animation: slideIn 0.3s ease-out;
-        }
-
         @media (max-width: 480px) {
             .container {
-                padding: 0 10px;
+                padding: 0 15px;
             }
-            .welcome-banner {
-                padding: 15px;
-            }
-            .welcome-title {
-                font-size: 20px;
-            }
-            .welcome-quote {
-                font-size: 13px;
-            }
+            
             .stats-grid {
                 gap: 10px;
             }
+            
             .stat-card {
-                min-width: 90px;
-                padding: 10px;
+                padding: 15px;
             }
+            
             .stat-number {
-                font-size: 16px;
-            }
-            .navigation {
-                padding: 8px;
-            }
-            .nav-item {
-                min-width: 40px;
-                padding: 6px;
-            }
-            .nav-icon {
-                font-size: 28px;
+                font-size: 20px;
             }
         }
 
@@ -2647,6 +671,106 @@
         .flex-center { display: flex; align-items: center; justify-content: center; }
         .gap-10 { gap: 10px; }
         .gap-15 { gap: 15px; }
+    
+
+.logo-container {
+    text-align: center;
+    padding: 40px;
+}
+
+.logo {
+    font-size: clamp(4rem, 12vw, 8rem);
+    font-weight: 800;
+    color: #000;
+    letter-spacing: -0.02em;
+    line-height: 0.9;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.logo:hover {
+    transform: scale(1.02);
+    color: #333;
+}
+
+.logo.animate {
+    animation: pulse 0.6s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Letter animation on load */
+.logo span {
+    display: inline-block;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease forwards;
+}
+
+.logo span:nth-child(1) { animation-delay: 0.1s; }
+.logo span:nth-child(2) { animation-delay: 0.2s; }
+.logo span:nth-child(3) { animation-delay: 0.3s; }
+.logo span:nth-child(4) { animation-delay: 0.4s; }
+.logo span:nth-child(5) { animation-delay: 0.5s; }
+.logo span:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Alternative dark theme */
+.dark-theme {
+    background: #000;
+}
+
+.dark-theme .logo {
+    color: #fff;
+}
+
+.dark-theme .logo:hover {
+    color: #ccc;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: 2px solid #000;
+    border-radius: 50px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.dark-theme .theme-toggle {
+    border-color: #fff;
+    color: #fff;
+}
+
+.theme-toggle:hover {
+    background: #000;
+    color: #fff;
+}
+
+.dark-theme .theme-toggle:hover {
+    background: #fff;
+    color: #000;
+}
     </style>
 </head>
 <body data-theme="dark">
@@ -2654,59 +778,55 @@
         <div class="content">
             <!-- HOME PAGE -->
             <div id="home" class="page active">
-                <div class="welcome-banner">
-                    <div class="welcome-avatar-container">
-                        <div class="profile-avatar" id="welcomeAvatar" role="img" aria-label="User avatar" onclick="navigateTo('profile')">
-                            <i class="fas fa-bullseye"></i>
+                <div class="header">
+                    <div class="page-title">Welcome Back!</div>
+                    <button class="theme-toggle" onclick="toggleTheme()">Dark/Light</button>
+    
+                    <div class="logo-container">
+                        <div class="logo" onclick="animateLogo()">
+                            <span>w</span><span>a</span><span>k</span><span>h</span><span>t</span><span>y</span>
                         </div>
-                        <svg class="progress-ring">
-                            <circle cx="48" cy="48" r="42" stroke-dasharray="264" stroke-dashoffset="0" id="progressRing"></circle>
-                        </svg>
+                    <div class="theme-selector">
+                        <div class="theme-btn dark active" data-theme="dark" aria-label="Dark Theme"></div>
+                        <div class="theme-btn light" data-theme="light" aria-label="Light Theme"></div>
+                        <div class="theme-btn white" data-theme="white" aria-label="White Theme"></div>
+                        <div class="theme-btn neon" data-theme="neon" aria-label="Neon Theme"></div>
                     </div>
-                    <div class="welcome-title" id="welcomeName">Hello, Student!</div>
-                    <div class="welcome-quote">"Crush your goals today!"</div>
                 </div>
 
-                <div class="stats-grid" role="navigation" aria-label="Progress statistics">
-                    <div class="stat-card" onclick="navigateTo('progress')" role="button" aria-label="View day streak">
-                        <div class="stat-icon"><i class="fas fa-fire"></i></div>
+                <div class="card">
+                    <div class="profile-section">
+                        <div class="profile-avatar" id="welcomeAvatar">🎯</div>
+                        <div class="profile-name" id="welcomeName">Hello, Student!</div>
+                        <div class="profile-level">Ready to crush today's goals? 🚀</div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
                         <div class="stat-number" id="dayStreak">0</div>
                         <div class="stat-label">Day Streak</div>
                     </div>
-                    <div class="stat-card" onclick="navigateTo('progress')" role="button" aria-label="View tasks completed today">
-                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-card">
                         <div class="stat-number" id="tasksCompletedToday">0</div>
                         <div class="stat-label">Tasks Done</div>
                     </div>
-                    <div class="stat-card" onclick="navigateTo('progress')" role="button" aria-label="View study hours today">
-                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    <div class="stat-card">
                         <div class="stat-number" id="studyTimeToday">0</div>
                         <div class="stat-label">Study Hours</div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <div class="schedule-header">
-                        <h3 class="schedule-title">Today's Schedule</h3>
-                        <button class="btn btn-small" onclick="toggleQuickAddForm()" aria-label="Toggle quick add task form">
-                            <i class="fas fa-plus"></i> Add Task
-                        </button>
-                    </div>
-                    <div class="quick-add-form" id="quickAddForm">
-                        <div class="form-group">
-                            <label class="form-label" for="quickTaskTime">Time</label>
-                            <input type="time" class="form-input" id="quickTaskTime" aria-required="true">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="quickTaskText">Task Description</label>
-                            <input type="text" class="form-input" id="quickTaskText" placeholder="Enter task..." aria-required="true">
-                        </div>
-                        <div class="flex gap-10">
-                            <button class="btn btn-small" onclick="addQuickTask()">Add</button>
-                            <button class="btn btn-small btn-secondary" onclick="toggleQuickAddForm()">Cancel</button>
+                    <h3 style="margin-bottom: 15px;">Today's Schedule</h3>
+                    <div id="todaySchedule" class="task-list">
+                        <div class="empty-state">
+                            <div class="empty-icon">📅</div>
+                            <div class="empty-title">No Schedule Yet</div>
+                            <div class="empty-description">Create your daily schedule to get started!</div>
+                            <button class="btn mt-20" onclick="navigateTo('scheduler')">Create Schedule</button>
                         </div>
                     </div>
-                    <div id="todaySchedule" class="schedule-timeline"></div>
                 </div>
             </div>
 
@@ -2745,7 +865,7 @@
                 <div class="card">
                     <div id="tasksList" class="task-list">
                         <div class="empty-state">
-                            <div class="empty-icon"><i class="fas fa-check-square"></i></div>
+                            <div class="empty-icon">✅</div>
                             <div class="empty-title">No Tasks Yet</div>
                             <div class="empty-description">Create a schedule to generate your tasks!</div>
                         </div>
@@ -2762,12 +882,12 @@
                 <div class="card">
                     <h3 style="margin-bottom: 15px;">Add Custom Reminder</h3>
                     <div class="form-group">
-                        <label class="form-label" for="reminderTime">Time</label>
-                        <input type="time" class="form-input" id="reminderTime" aria-required="true">
+                        <label class="form-label">Time</label>
+                        <input type="time" class="form-input" id="reminderTime">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="reminderText">Task Description</label>
-                        <input type="text" class="form-input" id="reminderText" placeholder="What do you need to remember?" aria-required="true">
+                        <label class="form-label">Task Description</label>
+                        <input type="text" class="form-input" id="reminderText" placeholder="What do you need to remember?">
                     </div>
                     <button class="btn" onclick="addReminder()">Add Reminder</button>
                 </div>
@@ -2776,7 +896,7 @@
                     <h3 style="margin-bottom: 15px;">Your Reminders</h3>
                     <div id="remindersList" class="task-list">
                         <div class="empty-state">
-                            <div class="empty-icon"><i class="fas fa-bell"></i></div>
+                            <div class="empty-icon">🔔</div>
                             <div class="empty-title">No Reminders</div>
                             <div class="empty-description">Add some reminders to stay on track!</div>
                         </div>
@@ -2809,7 +929,7 @@
                     <h3 style="margin-bottom: 15px;">Completed Tasks</h3>
                     <div id="completedTasksList" class="task-list">
                         <div class="empty-state">
-                            <div class="empty-icon"><i class="fas fa-trophy"></i></div>
+                            <div class="empty-icon">🏆</div>
                             <div class="empty-title">No Completed Tasks</div>
                             <div class="empty-description">Complete some tasks to see your progress!</div>
                         </div>
@@ -2821,17 +941,11 @@
             <div id="profile" class="page">
                 <div class="header">
                     <div class="page-title">Profile</div>
-                    <div class="theme-selector">
-                        <div class="theme-btn dark active" data-theme="dark" role="button" aria-label="Dark Theme"></div>
-                        <div class="theme-btn light" data-theme="light" role="button" aria-label="Light Theme"></div>
-                        <div class="theme-btn white" data-theme="white" role="button" aria-label="White Theme"></div>
-                        <div class="theme-btn neon" data-theme="neon" role="button" aria-label="Neon Theme"></div>
-                    </div>
                 </div>
 
                 <div class="card">
                     <div class="profile-section">
-                        <div class="profile-avatar" id="profileAvatar" role="button" aria-label="Change avatar" onclick="changeAvatar()"><i class="fas fa-bullseye"></i></div>
+                        <div class="profile-avatar" id="profileAvatar" onclick="changeAvatar()">🎯</div>
                         <div class="profile-name" id="profileName">Student</div>
                         <div class="profile-level">
                             Level <span id="profileLevel">1</span> • <span id="profileXP">0</span> XP
@@ -2851,14 +965,14 @@
                 <div class="card">
                     <h3 style="margin-bottom: 15px;">Your Hobbies</h3>
                     <div class="form-group">
-                        <label class="form-label" for="hobbiesInput">Add Hobbies (comma-separated)</label>
-                        <input type="text" class="form-input" id="hobbiesInput" placeholder="Reading, Gaming, Music..." aria-required="true">
+                        <label class="form-label">Add Hobbies (comma-separated)</label>
+                        <input type="text" class="form-input" id="hobbiesInput" placeholder="Reading, Gaming, Music...">
                     </div>
                     <button class="btn" onclick="saveHobbies()">Save Hobbies</button>
                     
                     <div id="hobbiesList" class="mt-20">
                         <div class="empty-state">
-                            <div class="empty-icon"><i class="fas fa-paint-brush"></i></div>
+                            <div class="empty-icon">🎨</div>
                             <div class="empty-title">No Hobbies Added</div>
                             <div class="empty-description">Add your hobbies to personalize your schedule!</div>
                         </div>
@@ -2870,23 +984,29 @@
         <!-- Navigation -->
         <div class="navigation">
             <div class="nav-items">
-                <div class="nav-item active" onclick="navigateTo('home')" role="button" aria-label="Home" aria-current="page">
-                    <div class="nav-icon"><i class="fas fa-home"></i></div>
+                <div class="nav-item active" onclick="navigateTo('home')" aria-label="Home" aria-current="page">
+                    <div class="nav-icon">🏠</div>
+                    <div class="nav-label">Home</div>
                 </div>
-                <div class="nav-item" onclick="navigateTo('scheduler')" role="button" aria-label="Scheduler">
-                    <div class="nav-icon"><i class="fas fa-calendar"></i></div>
+                <div class="nav-item" onclick="navigateTo('scheduler')" aria-label="Scheduler">
+                    <div class="nav-icon">📅</div>
+                    <div class="nav-label">Schedule</div>
                 </div>
-                <div class="nav-item" onclick="navigateTo('tasks')" role="button" aria-label="Tasks">
-                    <div class="nav-icon"><i class="fas fa-check-square"></i></div>
+                <div class="nav-item" onclick="navigateTo('tasks')" aria-label="Tasks">
+                    <div class="nav-icon">✅</div>
+                    <div class="nav-label">Tasks</div>
                 </div>
-                <div class="nav-item" onclick="navigateTo('reminders')" role="button" aria-label="Reminders">
-                    <div class="nav-icon"><i class="fas fa-bell"></i></div>
+                <div class="nav-item" onclick="navigateTo('reminders')" aria-label="Reminders">
+                    <div class="nav-icon">🔔</div>
+                    <div class="nav-label">Reminders</div>
                 </div>
-                <div class="nav-item" onclick="navigateTo('progress')" role="button" aria-label="Progress">
-                    <div class="nav-icon"><i class="fas fa-chart-bar"></i></div>
+                <div class="nav-item" onclick="navigateTo('progress')" aria-label="Progress">
+                    <div class="nav-icon">📊</div>
+                    <div class="nav-label">Progress</div>
                 </div>
-                <div class="nav-item" onclick="navigateTo('profile')" role="button" aria-label="Profile">
-                    <div class="nav-icon"><i class="fas fa-user"></i></div>
+                <div class="nav-item" onclick="navigateTo('profile')" aria-label="Profile">
+                    <div class="nav-icon">👤</div>
+                    <div class="nav-label">Profile</div>
                 </div>
             </div>
         </div>
@@ -2896,8 +1016,8 @@
 
     <script>
         // State Management
-        const defaultState = {
-            user: { name: "Student", avatar: "fas fa-bullseye", level: 1, xp: 0, streak: 0, hobbies: [] },
+        let state = {
+            user: { name: "Student", avatar: "🎯", level: 1, xp: 0, streak: 0, hobbies: [] },
             theme: "dark",
             schedule: [],
             tasks: [],
@@ -2907,7 +1027,6 @@
             quizAnswers: {},
             currentQuizStep: 0
         };
-        let state = { ...defaultState };
 
         const quizSteps = [
             { id: "name", question: "What's your name?", type: "text", required: true },
@@ -2918,33 +1037,21 @@
             { id: "bedtime", question: "What time do you go to bed?", type: "time", required: true },
             { id: "studyIntensity", question: "What's your study intensity?", type: "select", options: ["Chill", "Balanced", "Intense"], required: true },
             { id: "subjects", question: "What subjects are you studying? (comma-separated)", type: "text", required: true },
-            { id: "exerciseType", question: "What type of exercise do you do?", type: "select", options: ["Running", "Yoga", "Gym", "Other"], required: false },
-            { id: "exerciseDuration", question: "How long do you exercise? (minutes, min 30)", type: "number", min: 30, required: false },
-            { id: "hobbies", question: "What are your hobbies? (comma-separated)", type: "text", required: false },
-            { id: "hobbyDuration", question: "How long for hobbies? (minutes, min 60)", type: "number", min: 60, required: false },
-            { id: "breakActivity", question: "What's your preferred break activity?", type: "select", options: ["Snack", "Nap", "Walk", "Other"], required: false },
-            { id: "freeTimeActivity", question: "What do you do in your free time?", type: "select", options: ["Reading", "Netflix", "Gaming", "Other"], required: false }
+            { id: "exerciseType", question: "What type of exercise do you do?", type: "select", options: ["Running", "Yoga", "Gym", "Other"], required: true },
+            { id: "exerciseDuration", question: "How long do you exercise? (minutes, min 30)", type: "number", min: 30, required: true },
+            { id: "hobbies", question: "What are your hobbies? (comma-separated)", type: "text", required: true },
+            { id: "hobbyDuration", question: "How long for hobbies? (minutes, min 60)", type: "number", min: 60, required: true },
+            { id: "breakActivity", question: "What's your preferred break activity?", type: "select", options: ["Snack", "Nap", "Walk", "Other"], required: true },
+            { id: "freeTimeActivity", question: "What do you do in your free time?", type: "select", options: ["Reading", "Netflix", "Gaming", "Other"], required: true }
         ];
 
         // Utility Functions
-        function sanitizeHTML(str) {
-            const div = document.createElement("div");
-            div.textContent = str || "";
-            return div.innerHTML;
-        }
-
         function formatTime(date) {
             return date.toTimeString().slice(0, 5);
         }
 
         function parseTime(timeStr) {
-            if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) {
-                throw new Error("Invalid time format");
-            }
             const [hours, minutes] = timeStr.split(":").map(Number);
-            if (isNaN(hours) || isNaN(minutes) || hours > 23 || minutes > 59) {
-                throw new Error("Invalid time values");
-            }
             const date = new Date();
             date.setHours(hours, minutes, 0, 0);
             return date;
@@ -2963,9 +1070,9 @@
 
         function showNotification(message, type = "success") {
             const notification = document.getElementById("notification");
-            clearTimeout(notification.timeout);
-            notification.textContent = sanitizeHTML(message);
+            notification.textContent = message;
             notification.className = `notification ${type} show`;
+            clearTimeout(notification.timeout);
             notification.timeout = setTimeout(() => {
                 notification.className = "notification";
             }, 3000);
@@ -2975,7 +1082,7 @@
             try {
                 localStorage.setItem("studyFlowState", JSON.stringify(state));
             } catch (e) {
-                showNotification("Failed to save data. Storage may be full or disabled.", "error");
+                showNotification("Failed to save data!", "error");
             }
         }
 
@@ -2983,12 +1090,12 @@
             try {
                 const savedState = localStorage.getItem("studyFlowState");
                 if (savedState) {
-                    state = { ...defaultState, ...JSON.parse(savedState) };
+                    state = JSON.parse(savedState);
                     applyTheme();
                     updateUI();
                 }
             } catch (e) {
-                showNotification("Failed to load data. Starting with default settings.", "error");
+                showNotification("Failed to load data!", "error");
             }
         }
 
@@ -3004,7 +1111,7 @@
                 if (completedToday) {
                     state.user.streak++;
                     showNotification("Streak increased!");
-                } else if (state.tasks.length > 0) {
+                } else if (state.tasks.length === 0) {
                     state.user.streak = 0;
                 }
                 saveState();
@@ -3035,9 +1142,10 @@
             document.getElementById(pageId).classList.add("active");
             document.querySelectorAll(".nav-item").forEach(item => {
                 item.classList.toggle("active", item.getAttribute("onclick").includes(pageId));
-                item.removeAttribute("aria-current");
                 if (item.getAttribute("onclick").includes(pageId)) {
                     item.setAttribute("aria-current", "page");
+                } else {
+                    item.removeAttribute("aria-current");
                 }
             });
             resetDaily();
@@ -3045,6 +1153,32 @@
         }
 
         // Quiz Management
+        function renderQuiz() {
+            const quizStepsContainer = document.getElementById("quizSteps");
+            quizStepsContainer.innerHTML = quizSteps.map((step, index) => `
+                <div class="quiz-step ${index === state.currentQuizStep ? 'active' : ''}" data-step="${index}">
+                    <div class="form-group">
+                        <label class="form-label">${step.question}</label>
+                        ${step.type === "text" ? `<input type="text" class="form-input" id="${step.id}" value="${state.quizAnswers[step.id] || ''}" ${step.required ? 'required' : ''}>` :
+                         step.type === "number" ? `<input type="number" class="form-input" id="${step.id}" value="${state.quizAnswers[step.id] || ''}" min="${step.min || 0}" ${step.required ? 'required' : ''}>` :
+                         step.type === "time" ? `<input type="time" class="form-input" id="${step.id}" value="${state.quizAnswers[step.id] || ''}" ${step.required ? 'required' : ''}>` :
+                         `<select class="form-select" id="${step.id}" ${step.required ? 'required' : ''}>
+                            <option value="">Select...</option>
+                            ${step.options.map(opt => `<option value="${opt}" ${state.quizAnswers[step.id] === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                          </select>`}
+                    </div>
+                </div>
+            `).join('');
+
+            const quizProgress = document.getElementById("quizProgress");
+            quizProgress.innerHTML = quizSteps.map((_, index) => `
+                <div class="progress-dot ${index === state.currentQuizStep ? 'active' : index < state.currentQuizStep ? 'completed' : ''}"></div>
+            `).join('');
+
+            document.getElementById("prevBtn").style.display = state.currentQuizStep === 0 ? "none" : "inline-flex";
+            document.getElementById("nextBtn").textContent = state.currentQuizStep === quizSteps.length - 1 ? "Finish" : "Next";
+        }
+
         function validateStep(stepIndex) {
             const step = quizSteps[stepIndex];
             const input = document.getElementById(step.id);
@@ -3072,55 +1206,13 @@
             if (step.id === "bedtime" && state.quizAnswers.wakeUp) {
                 const wakeUp = parseTime(state.quizAnswers.wakeUp);
                 const bedtime = parseTime(value);
-                const wakeUpMinutes = wakeUp.getHours() * 60 + wakeUp.getMinutes();
-                const bedtimeMinutes = bedtime.getHours() * 60 + bedtime.getMinutes();
-                if (bedtimeMinutes <= wakeUpMinutes) {
-                    showNotification("Bedtime must be after wake-up time (considering next day)!", "error");
+                if (bedtime <= wakeUp) {
+                    showNotification("Bedtime must be after wake-up time!", "error");
                     return false;
                 }
             }
 
             return true;
-        }
-
-        function renderQuiz() {
-            const quizStepsContainer = document.getElementById("quizSteps");
-            const fragment = document.createDocumentFragment();
-            quizSteps.forEach((step, index) => {
-                const stepElement = document.createElement("div");
-                stepElement.className = `quiz-step ${index === state.currentQuizStep ? 'active' : ''}`;
-                stepElement.setAttribute("data-step", index);
-                stepElement.innerHTML = `
-                    <div class="form-group">
-                        <label class="form-label" for="${step.id}">${sanitizeHTML(step.question)}</label>
-                        ${step.type === "text" ? `<input type="text" class="form-input" id="${step.id}" value="${sanitizeHTML(state.quizAnswers[step.id] || '')}" ${step.required ? 'required' : ''} aria-required="${step.required}">` :
-                         step.type === "number" ? `<input type="number" class="form-input" id="${step.id}" value="${sanitizeHTML(state.quizAnswers[step.id] || '')}" min="${step.min || 0}" ${step.required ? 'required' : ''} aria-required="${step.required}">` :
-                         step.type === "time" ? `<input type="time" class="form-input" id="${step.id}" value="${sanitizeHTML(state.quizAnswers[step.id] || '')}" ${step.required ? 'required' : ''} aria-required="${step.required}">` :
-                         `<select class="form-select" id="${step.id}" ${step.required ? 'required' : ''} aria-required="${step.required}">
-                            <option value="">Select...</option>
-                            ${step.options.map(opt => `<option value="${opt}" ${state.quizAnswers[step.id] === opt ? 'selected' : ''}>${sanitizeHTML(opt)}</option>`).join('')}
-                          </select>`}
-                    </div>
-                `;
-                fragment.appendChild(stepElement);
-            });
-            quizStepsContainer.innerHTML = "";
-            quizStepsContainer.appendChild(fragment);
-
-            const quizProgress = document.getElementById("quizProgress");
-            quizProgress.innerHTML = quizSteps.map((_, index) => `
-                <div class="progress-dot ${index === state.currentQuizStep ? 'active' : index < state.currentQuizStep ? 'completed' : ''}"></div>
-            `).join('');
-
-            const prevBtn = document.getElementById("prevBtn");
-            const nextBtn = document.getElementById("nextBtn");
-            prevBtn.style.display = state.currentQuizStep === 0 ? "none" : "inline-flex";
-            nextBtn.textContent = state.currentQuizStep === quizSteps.length - 1 ? "Finish" : "Next";
-            nextBtn.disabled = !validateStep(state.currentQuizStep);
-
-            document.getElementById(quizSteps[state.currentQuizStep].id).addEventListener("input", () => {
-                nextBtn.disabled = !validateStep(state.currentQuizStep);
-            });
         }
 
         function prevStep() {
@@ -3153,57 +1245,51 @@
         function generateSchedule() {
             const { wakeUp, bedtime, schoolStart, schoolEnd, subjects, studyIntensity, exerciseType, exerciseDuration, hobbies, hobbyDuration, breakActivity, freeTimeActivity, timePreference } = state.quizAnswers;
             state.schedule = [];
+
             let currentTime = wakeUp;
-            const bedtimeDate = bedtime ? parseTime(bedtime) : null;
+            state.schedule.push({ time: currentTime, title: "Wake Up", description: "Start your day!", duration: 0, emoji: "☀️", completed: false });
 
-            const addTask = (title, description, duration, iconClass) => {
-                if (bedtimeDate && parseTime(currentTime) >= bedtimeDate) return false;
-                const taskId = `${currentTime}-${title}-${Date.now()}`;
-                state.schedule.push({ id: taskId, time: currentTime, title, description, duration, iconClass, completed: false });
-                currentTime = addMinutes(currentTime, duration);
-                return true;
-            };
+            currentTime = addMinutes(currentTime, 30);
+            state.schedule.push({ time: currentTime, title: "Morning Routine", description: "Get ready for the day", duration: 30, emoji: "🪥", completed: false });
 
-            addTask("Wake Up", "Start your day!", 0, "fas fa-sun");
-            addTask("Morning Routine", "Get ready for the day", 30, "fas fa-tooth");
-
-            if ((timePreference === "Morning" || timePreference === "Both") && exerciseType && exerciseDuration) {
-                addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()}`, parseInt(exerciseDuration), "fas fa-dumbbell");
+            if (timePreference === "Morning" || timePreference === "Both") {
+                state.schedule.push({ time: currentTime, title: `Exercise: ${exerciseType}`, description: `Time for ${exerciseType.toLowerCase()}`, duration: parseInt(exerciseDuration), emoji: "💪", completed: false });
+                currentTime = addMinutes(currentTime, parseInt(exerciseDuration));
             }
 
-            if (schoolStart && parseTime(currentTime) < parseTime(schoolStart)) {
-                addTask("Free Time", freeTimeActivity || "Relax", 45, "fas fa-party-horn");
+            if (parseTime(currentTime) < parseTime(schoolStart)) {
+                state.schedule.push({ time: currentTime, title: "Free Time", description: freeTimeActivity, duration: 45, emoji: "🎉", completed: false });
                 currentTime = schoolStart;
             }
 
-            if (schoolStart && schoolEnd) {
-                addTask("School", "Attend classes", Math.round((parseTime(schoolEnd) - parseTime(schoolStart)) / 60000), "fas fa-school");
-                currentTime = schoolEnd;
-            }
+            state.schedule.push({ time: currentTime, title: "School", description: "Attend classes", duration: Math.round((parseTime(schoolEnd) - parseTime(schoolStart)) / 60000), emoji: "🏫", completed: false });
+            currentTime = schoolEnd;
 
-            addTask("Lunch Break", "Enjoy your meal", 45, "fas fa-utensils");
+            state.schedule.push({ time: currentTime, title: "Lunch Break", description: "Enjoy your meal", duration: 45, emoji: "🍽️", completed: false });
             currentTime = addMinutes(currentTime, 45);
 
-            if (subjects) {
-                const subjectsList = subjects.split(",").map(s => s.trim()).filter(s => s);
-                const studyDuration = studyIntensity === "Chill" ? 30 : studyIntensity === "Balanced" ? 45 : 60;
-                subjectsList.forEach(subject => {
-                    if (!addTask(`Study: ${subject}`, `Focus on ${subject}`, studyDuration, "fas fa-book")) return;
-                    addTask(breakActivity || "Break", "Take a short break", 10, "fas fa-coffee");
-                });
+            const subjectsList = subjects.split(",").map(s => s.trim()).filter(s => s);
+            const studyDuration = studyIntensity === "Chill" ? 30 : studyIntensity === "Balanced" ? 45 : 60;
+            subjectsList.forEach(subject => {
+                state.schedule.push({ time: currentTime, title: `Study: ${subject}`, description: `Focus on ${subject}`, duration: studyDuration, emoji: "📚", completed: false });
+                currentTime = addMinutes(currentTime, studyDuration);
+                state.schedule.push({ time: currentTime, title: breakActivity, description: "Take a short break", duration: 10, emoji: "☕", completed: false });
+                currentTime = addMinutes(currentTime, 10);
+            });
+
+            if (timePreference === "Night" || timePreference === "Both") {
+                state.schedule.push({ time: currentTime, title: `Exercise: ${exerciseType}`, description: `Time for ${exerciseType.toLowerCase()}`, duration: parseInt(exerciseDuration), emoji: "💪", completed: false });
+                currentTime = addMinutes(currentTime, parseInt(exerciseDuration));
             }
 
-            if ((timePreference === "Night" || timePreference === "Both") && exerciseType && exerciseDuration) {
-                addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()}`, parseInt(exerciseDuration), "fas fa-dumbbell");
-            }
+            const hobbiesList = hobbies.split(",").map(h => h.trim()).filter(h => h);
+            state.schedule.push({ time: currentTime, title: "Hobbies", description: `Enjoy ${hobbiesList.join(", ")}`, duration: parseInt(hobbyDuration), emoji: "🎨", completed: false });
+            currentTime = addMinutes(currentTime, parseInt(hobbyDuration));
 
-            if (hobbies && hobbyDuration) {
-                const hobbiesList = hobbies.split(",").map(h => h.trim()).filter(h => h);
-                addTask("Hobbies", `Enjoy ${hobbiesList.join(", ")}`, parseInt(hobbyDuration), "fas fa-paint-brush");
-            }
+            state.schedule.push({ time: currentTime, title: "Free Time", description: freeTimeActivity, duration: 45, emoji: "🎉", completed: false });
+            currentTime = addMinutes(currentTime, 45);
 
-            addTask("Free Time", freeTimeActivity || "Relax", 45, "fas fa-party-horn");
-            addTask("Bedtime", "Get some rest", 0, "fas fa-bed");
+            state.schedule.push({ time: bedtime, title: "Bedtime", description: "Get some rest", duration: 0, emoji: "🛌", completed: false });
 
             state.schedule.sort((a, b) => parseTime(a.time) - parseTime(b.time));
             renderSchedule();
@@ -3211,36 +1297,29 @@
 
         function renderSchedule() {
             const scheduleDisplay = document.getElementById("scheduleDisplay");
-            const fragment = document.createDocumentFragment();
-            state.schedule.forEach(item => {
-                const scheduleItem = document.createElement("div");
-                scheduleItem.className = "schedule-item";
-                scheduleItem.innerHTML = `
-                    <div class="schedule-time">${sanitizeHTML(item.time)}</div>
+            scheduleDisplay.innerHTML = state.schedule.map(item => `
+                <div class="schedule-item">
+                    <div class="schedule-time">${item.time}</div>
                     <div class="schedule-dot"></div>
-                    < charity:style="width: 24px; height: 24px; border: 3px solid var(--bg-dark);"></div>
                     <div class="task-item ${item.completed ? 'completed' : ''}">
-                        <div class="task-checkbox ${item.completed ? 'checked' : ''}" role="checkbox" aria-checked="${item.completed}" onclick="toggleTask('${item.id}')"></div>
+                        <div class="task-checkbox ${item.completed ? 'checked' : ''}" onclick="toggleTask('${item.time}', '${item.title}')"></div>
                         <div class="task-content">
-                            <div class="task-title">${sanitizeHTML(item.title)}</div>
+                            <div class="task-title">${item.title}</div>
                             <div class="task-meta">
-                                <span class="task-time">${sanitizeHTML(item.time)}</span>
+                                <span class="task-time">${item.time}</span>
                                 <span class="task-duration">${item.duration} min</span>
-                                <span class="fa-icon"><i class="${sanitizeHTML(item.iconClass)}"></i></span>
+                                <span class="task-emoji">${item.emoji}</span>
                             </div>
-                            <div>${sanitizeHTML(item.description)}</div>
+                            <div>${item.description}</div>
                         </div>
                     </div>
-                `;
-                fragment.appendChild(scheduleItem);
-            });
-            scheduleDisplay.innerHTML = "";
-            scheduleDisplay.appendChild(fragment);
+                </div>
+            `).join('');
         }
 
         function saveSchedule() {
             state.tasks = state.schedule.map(item => ({ ...item, type: inferTaskType(item.title) }));
-            state.reminders = state.tasks.map(task => ({ ...task, id: `${task.time}-${task.title}-${Date.now()}` }));
+            state.reminders = state.tasks.map(task => ({ ...task, id: `${task.time}-${task.title}` }));
             state.user.hobbies = state.quizAnswers.hobbies ? state.quizAnswers.hobbies.split(",").map(h => h.trim()).filter(h => h) : [];
             state.user.name = state.quizAnswers.name || "Student";
             state.currentQuizStep = 0;
@@ -3260,10 +1339,10 @@
             return "custom";
         }
 
-        function toggleTask(taskId) {
-            const task = state.tasks.find(t => t.id === taskId);
-            const reminder = state.reminders.find(r => r.id === taskId);
-            const scheduleItem = state.schedule.find(s => s.id === taskId);
+        function toggleTask(time, title) {
+            const task = state.tasks.find(t => t.time === time && t.title === title);
+            const reminder = state.reminders.find(r => r.time === time && r.title === title);
+            const scheduleItem = state.schedule.find(s => s.time === time && s.title === title);
 
             if (task && scheduleItem) {
                 task.completed = !task.completed;
@@ -3278,7 +1357,7 @@
                     if (state.completedTasks.length > 20) state.completedTasks.shift();
                     if (state.tasks.every(t => t.completed)) {
                         state.user.streak++;
-                        state.stats.tasksCompletedToday = state.tasks.length;
+                        state.stats.tasksCompletedToday = 15;
                         state.tasks = [];
                         state.reminders = [];
                         state.schedule = [];
@@ -3290,7 +1369,7 @@
                     state.stats.tasksCompletedToday = Math.max(0, state.stats.tasksCompletedToday - 1);
                     if (task.type === "study") state.stats.studyTimeToday = Math.max(0, state.stats.studyTimeToday - task.duration / 60);
                     state.user.xp = Math.max(0, state.user.xp - 10);
-                    state.completedTasks = state.completedTasks.filter(t => t.id !== taskId);
+                    state.completedTasks = state.completedTasks.filter(t => !(t.time === time && t.title === title));
                     showNotification("Task unmarked.");
                 }
 
@@ -3303,49 +1382,28 @@
             }
         }
 
-        function deleteTask(taskId) {
-            state.tasks = state.tasks.filter(t => t.id !== taskId);
-            state.schedule = state.schedule.filter(s => s.id !== taskId);
-            state.reminders = state.reminders.filter(r => r.id !== taskId);
-            saveState();
-            showNotification("Task deleted!");
-            updateUI();
-        }
-
         function renderTasks() {
             const tasksList = document.getElementById("tasksList");
-            const fragment = document.createDocumentFragment();
-            if (state.tasks.length) {
-                state.tasks.forEach(task => {
-                    const taskElement = document.createElement("div");
-                    taskElement.className = `task-item ${task.completed ? 'completed' : ''}`;
-                    taskElement.innerHTML = `
-                        <div class="task-checkbox ${task.completed ? 'checked' : ''}" role="checkbox" aria-checked="${task.completed}" onclick="toggleTask('${task.id}')"></div>
-                        <div class="task-content">
-                            <div class="task-title">${sanitizeHTML(task.title)}</div>
-                            <div class="task-meta">
-                                <span class="task-time">${sanitizeHTML(task.time)}</span>
-                                <span class="task-duration">${task.duration} min</span>
-                                <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
-                            </div>
-                            <div>${sanitizeHTML(task.description)}</div>
+            tasksList.innerHTML = state.tasks.length ? state.tasks.map(task => `
+                <div class="task-item ${task.completed ? 'completed' : ''}">
+                    <div class="task-checkbox ${task.completed ? 'checked' : ''}" onclick="toggleTask('${task.time}', '${task.title}')"></div>
+                    <div class="task-content">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-meta">
+                            <span class="task-time">${task.time}</span>
+                            <span class="task-duration">${task.duration} min</span>
+                            <span class="task-emoji">${task.emoji}</span>
                         </div>
-                        <button class="btn btn-small btn-secondary" onclick="deleteTask('${task.id}')">Remove</button>
-                    `;
-                    fragment.appendChild(taskElement);
-                });
-            } else {
-                const emptyState = document.createElement("div");
-                emptyState.className = "empty-state";
-                emptyState.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-check-square"></i></div>
+                        <div>${task.description}</div>
+                    </div>
+                </div>
+            `).join('') : `
+                <div class="empty-state">
+                    <div class="empty-icon">✅</div>
                     <div class="empty-title">No Tasks Yet</div>
                     <div class="empty-description">Create a schedule to generate your tasks!</div>
-                `;
-                fragment.appendChild(emptyState);
-            }
-            tasksList.innerHTML = "";
-            tasksList.appendChild(fragment);
+                </div>
+            `;
         }
 
         // Reminder Management
@@ -3358,14 +1416,13 @@
                 return;
             }
 
-            const reminderId = `${time}-${text}-${Date.now()}`;
             const reminder = {
-                id: reminderId,
+                id: `${time}-${text}`,
                 time,
                 title: text,
                 description: text,
                 duration: 30,
-                iconClass: inferTaskType(text) === "study" ? "fas fa-book" : inferTaskType(text) === "exercise" ? "fas fa-dumbbell" : inferTaskType(text) === "hobby" ? "fas fa-paint-brush" : "fas fa-bell",
+                emoji: inferTaskType(text) === "study" ? "📚" : inferTaskType(text) === "exercise" ? "💪" : inferTaskType(text) === "hobby" ? "🎨" : "🔔",
                 completed: false,
                 type: inferTaskType(text)
             };
@@ -3385,7 +1442,7 @@
             const reminder = state.reminders.find(r => r.id === id);
             if (reminder) {
                 state.reminders = state.reminders.filter(r => r.id !== id);
-                state.tasks = state.tasks.filter(t => t.id !== id);
+                state.tasks = state.tasks.filter(t => !(t.time === reminder.time && t.title === reminder.title));
                 saveState();
                 showNotification("Reminder deleted!");
                 renderReminders();
@@ -3394,38 +1451,27 @@
 
         function renderReminders() {
             const remindersList = document.getElementById("remindersList");
-            const fragment = document.createDocumentFragment();
-            if (state.reminders.length) {
-                state.reminders.forEach(reminder => {
-                    const reminderElement = document.createElement("div");
-                    reminderElement.className = `task-item ${reminder.completed ? 'completed' : ''}`;
-                    reminderElement.innerHTML = `
-                        <div class="task-checkbox ${reminder.completed ? 'checked' : ''}" role="checkbox" aria-checked="${reminder.completed}" onclick="toggleTask('${reminder.id}')"></div>
-                        <div class="task-content">
-                            <div class="task-title">${sanitizeHTML(reminder.title)}</div>
-                            <div class="task-meta">
-                                <span class="task-time">${sanitizeHTML(reminder.time)}</span>
-                                <span class="task-duration">${reminder.duration} min</span>
-                                <span class="fa-icon"><i class="${sanitizeHTML(reminder.iconClass)}"></i></span>
-                            </div>
-                            <div>${sanitizeHTML(reminder.description)}</div>
+            remindersList.innerHTML = state.reminders.length ? state.reminders.map(reminder => `
+                <div class="task-item ${reminder.completed ? 'completed' : ''}">
+                    <div class="task-checkbox ${reminder.completed ? 'checked' : ''}" onclick="toggleTask('${reminder.time}', '${reminder.title}')"></div>
+                    <div class="task-content">
+                        <div class="task-title">${reminder.title}</div>
+                        <div class="task-meta">
+                            <span class="task-time">${reminder.time}</span>
+                            <span class="task-duration">${reminder.duration} min</span>
+                            <span class="task-emoji">${reminder.emoji}</span>
                         </div>
-                        <button class="btn btn-small btn-secondary" onclick="deleteReminder('${reminder.id}')">Remove</button>
-                    `;
-                    fragment.appendChild(reminderElement);
-                });
-            } else {
-                const emptyState = document.createElement("div");
-                emptyState.className = "empty-state";
-                emptyState.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-bell"></i></div>
+                        <div>${reminder.description}</div>
+                    </div>
+                    <button class="btn btn-small btn-secondary" onclick="deleteReminder('${reminder.id}')">Remove</button>
+                </div>
+            `).join('') : `
+                <div class="empty-state">
+                    <div class="empty-icon">🔔</div>
                     <div class="empty-title">No Reminders</div>
                     <div class="empty-description">Add some reminders to stay on track!</div>
-                `;
-                fragment.appendChild(emptyState);
-            }
-            remindersList.innerHTML = "";
-            remindersList.appendChild(fragment);
+                </div>
+            `;
         }
 
         // Progress Management
@@ -3435,42 +1481,31 @@
             document.getElementById("totalXP").textContent = state.user.xp;
 
             const completedTasksList = document.getElementById("completedTasksList");
-            const fragment = document.createDocumentFragment();
-            if (state.completedTasks.length) {
-                state.completedTasks.forEach(task => {
-                    const taskElement = document.createElement("div");
-                    taskElement.className = "task-item completed";
-                    taskElement.innerHTML = `
-                        <div class="task-checkbox checked" role="checkbox" aria-checked="true"></div>
-                        <div class="task-content">
-                            <div class="task-title">${sanitizeHTML(task.title)}</div>
-                            <div class="task-meta">
-                                <span class="task-time">${sanitizeHTML(task.time)}</span>
-                                <span class="task-duration">${task.duration} min</span>
-                                <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
-                            </div>
-                            <div>${sanitizeHTML(task.description)} (Completed: ${sanitizeHTML(task.completionDate)})</div>
+            completedTasksList.innerHTML = state.completedTasks.length ? state.completedTasks.map(task => `
+                <div class="task-item completed">
+                    <div class="task-checkbox checked"></div>
+                    <div class="task-content">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-meta">
+                            <span class="task-time">${task.time}</span>
+                            <span class="task-duration">${task.duration} min</span>
+                            <span class="task-emoji">${task.emoji}</span>
                         </div>
-                    `;
-                    fragment.appendChild(taskElement);
-                });
-            } else {
-                const emptyTasksList = document.createElement("div");
-                emptyTasksList.className = "empty-state";
-                emptyTasksList.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-trophy"></i></div>
+                        <div>${task.description} (Completed: ${task.completionDate})</div>
+                    </div>
+                </div>
+            `).join('') : `
+                <div class="empty-state">
+                    <div class="empty-icon">🏆</div>
                     <div class="empty-title">No Completed Tasks</div>
                     <div class="empty-description">Complete some tasks to see your progress!</div>
-                `;
-                fragment.appendChild(emptyTasksList);
-            }
-            completedTasksList.innerHTML = "";
-            completedTasksList.appendChild(fragment);
+                </div>
+            `;
         }
 
         // Profile Management
         function changeAvatar() {
-            const avatars = ["fas fa-bullseye", "fas fa-rocket", "fas fa-bolt"];
+            const avatars = ["🎯", "🚀", "⚡"];
             let currentIndex = avatars.indexOf(state.user.avatar);
             state.user.avatar = avatars[(currentIndex + 1) % avatars.length];
             saveState();
@@ -3493,135 +1528,58 @@
 
         function renderHobbies() {
             const hobbiesList = document.getElementById("hobbiesList");
-            const fragment = document.createDocumentFragment();
-            if (state.user.hobbies.length) {
-                state.user.hobbies.forEach(hobby => {
-                    const hobbyElement = document.createElement("div");
-                    hobbyElement.className = "task-item";
-                    hobbyElement.innerHTML = `
-                        <div class="task-content">
-                            <div class="task-title">${sanitizeHTML(hobby)}</div>
-                            <div class="fa-icon"><i class="fas fa-paint-brush"></i></div>
-                        </div>
-                    `;
-                    fragment.appendChild(hobbyElement);
-                });
-            } else {
-                const emptyState = document.createElement("div");
-                emptyState.className = "empty-state";
-                emptyState.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-paint-brush"></i></div>
+            hobbiesList.innerHTML = state.user.hobbies.length ? state.user.hobbies.map(hobby => `
+                <div class="task-item">
+                    <div class="task-content">
+                        <div class="task-title">${hobby}</div>
+                        <div class="task-emoji">🎨</div>
+                    </div>
+                </div>
+            `).join('') : `
+                <div class="empty-state">
+                    <div class="empty-icon">🎨</div>
                     <div class="empty-title">No Hobbies Added</div>
                     <div class="empty-description">Add your hobbies to personalize your schedule!</div>
-                `;
-                fragment.appendChild(emptyState);
-            }
-            hobbiesList.innerHTML = "";
-            hobbiesList.appendChild(fragment);
-        }
-
-        // Home Page Specific Functions
-        function toggleQuickAddForm() {
-            const form = document.getElementById("quickAddForm");
-            form.classList.toggle("active");
-            if (form.classList.contains("active")) {
-                document.getElementById("quickTaskTime").focus();
-            } else {
-                document.getElementById("quickTaskTime").value = "";
-                document.getElementById("quickTaskText").value = "";
-            }
-        }
-
-        function addQuickTask() {
-            const time = document.getElementById("quickTaskTime").value;
-            const text = document.getElementById("quickTaskText").value.trim();
-
-            if (!time || !text) {
-                showNotification("Please enter both time and task description!", "error");
-                return;
-            }
-
-            const taskId = `${time}-${text}-${Date.now()}`;
-            const task = {
-                id: taskId,
-                time,
-                title: text,
-                description: text,
-                duration: 30,
-                iconClass: inferTaskType(text) === "study" ? "fas fa-book" : inferTaskType(text) === "exercise" ? "fas fa-dumbbell" : inferTaskType(text) === "hobby" ? "fas fa-paint-brush" : "fas fa-bell",
-                completed: false,
-                type: inferTaskType(text)
-            };
-
-            state.tasks.push(task);
-            state.schedule.push(task);
-            state.reminders.push({ ...task, id: `${time}-${text}-${Date.now()}` });
-            state.tasks.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-            state.schedule.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-            state.reminders.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-            saveState();
-            showNotification("Task added!");
-            document.getElementById("quickTaskTime").value = "";
-            document.getElementById("quickTaskText").value = "";
-            toggleQuickAddForm();
-            updateUI();
+                </div>
+            `;
         }
 
         // UI Updates
         function updateUI() {
-            document.getElementById("welcomeName").textContent = `Hello, ${sanitizeHTML(state.user.name)}!`;
-            document.getElementById("welcomeAvatar").innerHTML = `<i class="${sanitizeHTML(state.user.avatar)}"></i>`;
+            // Home Page
+            document.getElementById("welcomeName").textContent = `Hello, ${state.user.name}!`;
+            document.getElementById("welcomeAvatar").textContent = state.user.avatar;
             document.getElementById("dayStreak").textContent = state.user.streak;
             document.getElementById("tasksCompletedToday").textContent = state.stats.tasksCompletedToday;
             document.getElementById("studyTimeToday").textContent = state.stats.studyTimeToday.toFixed(1);
 
-            // Update progress ring
-            const progressRing = document.getElementById("progressRing");
-            const xpProgress = (state.user.xp % 100) / 100;
-            const circumference = 264; // 2 * π * 42
-            progressRing.style.strokeDashoffset = circumference * (1 - xpProgress);
-
             const todaySchedule = document.getElementById("todaySchedule");
-            const upcomingTasks = state.tasks.filter(task => !task.completed).slice(0, 5);
-            const fragment = document.createDocumentFragment();
-            if (upcomingTasks.length) {
-                upcomingTasks.forEach(task => {
-                    const scheduleItem = document.createElement("div");
-                    scheduleItem.className = "schedule-item";
-                    scheduleItem.innerHTML = `
-                        <div class="schedule-time">${sanitizeHTML(task.time)}</div>
-                        <div class="schedule-dot"></div>
-                        <div class="task-item ${task.completed ? 'completed' : ''} ${task.type}">
-                            <div class="task-checkbox ${task.completed ? 'checked' : ''}" role="checkbox" aria-checked="${task.completed}" onclick="toggleTask('${task.id}')"></div>
-                            <div class="task-content">
-                                <div class="task-title">${sanitizeHTML(task.title)}</div>
-                                <div class="task-meta">
-                                    <span class="task-time">${sanitizeHTML(task.time)}</span>
-                                    <span class="task-duration">${task.duration} min</span>
-                                    <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
-                                </div>
-                                <div>${sanitizeHTML(task.description)}</div>
-                            </div>
+            const upcomingTasks = state.tasks.filter(task => !task.completed).slice(0, 3);
+            todaySchedule.innerHTML = upcomingTasks.length ? upcomingTasks.map(task => `
+                <div class="task-item ${task.completed ? 'completed' : ''}">
+                    <div class="task-checkbox ${task.completed ? 'checked' : ''}" onclick="toggleTask('${task.time}', '${task.title}')"></div>
+                    <div class="task-content">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-meta">
+                            <span class="task-time">${task.time}</span>
+                            <span class="task-duration">${task.duration} min</span>
+                            <span class="task-emoji">${task.emoji}</span>
                         </div>
-                    `;
-                    fragment.appendChild(scheduleItem);
-                });
-            } else {
-                const emptyState = document.createElement("div");
-                emptyState.className = "empty-state";
-                emptyState.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-calendar"></i></div>
+                        <div>${task.description}</div>
+                    </div>
+                </div>
+            `).join('') : `
+                <div class="empty-state">
+                    <div class="empty-icon">📅</div>
                     <div class="empty-title">No Schedule Yet</div>
                     <div class="empty-description">Create your daily schedule to get started!</div>
                     <button class="btn mt-20" onclick="navigateTo('scheduler')">Create Schedule</button>
-                `;
-                fragment.appendChild(emptyState);
-            }
-            todaySchedule.innerHTML = "";
-            todaySchedule.appendChild(fragment);
+                </div>
+            `;
 
-            document.getElementById("profileName").textContent = sanitizeHTML(state.user.name);
-            document.getElementById("profileAvatar").innerHTML = `<i class="${sanitizeHTML(state.user.avatar)}"></i>`;
+            // Profile Page
+            document.getElementById("profileName").textContent = state.user.name;
+            document.getElementById("profileAvatar").textContent = state.user.avatar;
             document.getElementById("profileLevel").textContent = state.user.level;
             document.getElementById("profileXP").textContent = state.user.xp;
             document.getElementById("currentXP").textContent = state.user.xp % 100;
@@ -3639,5 +1597,88 @@
         renderQuiz();
         updateUI();
     </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+    function animateLogo() {
+            const logo = document.querySelector('.logo');
+            logo.classList.add('animate');
+            
+            setTimeout(() => {
+                logo.classList.remove('animate');
+            }, 600);
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+        }
+
+        // Add keyboard interaction
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                animateLogo();
+            }
+            if (e.code === 'KeyT') {
+                toggleTheme();
+            }
+        });
+
+        // Random color on double click
+        let clickTimeout;
+        document.querySelector('.logo').addEventListener('click', (e) => {
+            if (clickTimeout) {
+                clearTimeout(clickTimeout);
+                clickTimeout = null;
+                
+                // Double click - random color
+                const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dda0dd'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                e.target.style.color = randomColor;
+                
+                setTimeout(() => {
+                    e.target.style.color = '';
+                }, 2000);
+            } else {
+                clickTimeout = setTimeout(() => {
+                    clickTimeout = null;
+                }, 300);
+            }
+        });
+	// ]]>
+</script>
 </body>
 </html>
