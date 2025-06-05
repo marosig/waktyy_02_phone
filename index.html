@@ -841,7 +841,7 @@ body {
     <div class="container">
         <div class="content">
             <!-- HOME PAGE -->
-            <div id="home" class="page active">
+            <div id="home" class="page active"tabindex="0">
                 <div class="header">
                     <div class="app-title">WAKTY</div>
                 </div>
@@ -902,7 +902,7 @@ body {
             </div>
 
             <!-- SCHEDULER PAGE -->
-            <div id="scheduler" class="page">
+            <div id="scheduler" class="page"tabindex="0">
                 <div class="header">
                     <div class="page-title">Create Schedule</div>
                 </div>
@@ -939,7 +939,7 @@ body {
             </div>
 
             <!-- REMINDERS PAGE -->
-            <div id="reminders" class="page">
+            <div id="reminders" class="page"tabindex="0">
                 <div class="header">
                     <div class="page-title">Reminders</div>
                 </div>
@@ -964,7 +964,7 @@ body {
             </div>
 
             <!-- PROGRESS PAGE -->
-            <div id="progress" class="page">
+            <div id="progress" class="page"tabindex="0">
                 <div class="header">
                     <div class="page-title">Progress</div>
                 </div>
@@ -991,7 +991,7 @@ body {
             </div>
 
             <!-- PROFILE PAGE -->
-            <div id="profile" class="page">
+            <div id="profile" class="page"tabindex="0">
                 <div class="header">
                     <div class="page-title">Profile</div>
                     <div class="theme-selector" role="group" aria-label="Theme selector">
@@ -1061,7 +1061,7 @@ body {
 
     <div id="notification" class="notification" role="alert" aria-live="assertive"></div>
     <script>
-        const defaultState = {
+const defaultState = {
     user: { name: "Student", avatar: "fas fa-bullseye", level: 1, xp: 0, streak: 0, hobbies: [] },
     theme: "dark",
     schedule: [],
@@ -1099,39 +1099,36 @@ function sanitizeHTML(str) {
 }
 
 function formatTime(date) {
-    if (!(date instanceof Date)) return "00:00";
+    if (!(date instanceof Date) || isNaN(date)) return "00:00";
     return date.toTimeString().slice(0, 5);
 }
 
 function parseTime(timeStr) {
-    if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) {
-        throw new Error("Invalid time format");
-    }
+    if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) return null;
     const [hours, minutes] = timeStr.split(":").map(Number);
-    if (isNaN(hours) || isNaN(minutes) || hours > 23 || minutes > 59) {
-        throw new Error("Invalid time values");
-    }
+    if (isNaN(hours) || isNaN(minutes) || hours > 23 || minutes > 59) return null;
     const date = new Date();
     date.setHours(hours, minutes, 0, 0);
     return date;
 }
 
 function addMinutes(time, minutes) {
-    try {
-        const date = parseTime(time);
-        date.setMinutes(date.getMinutes() + minutes);
-        return formatTime(date);
-    } catch (e) {
+    const date = parseTime(time);
+    if (!date) {
         showNotification("Invalid time calculation!", "error");
         return time;
     }
+    date.setMinutes(date.getMinutes() + minutes);
+    return formatTime(date);
 }
 
 function showNotification(message, type = "success") {
     const notification = document.getElementById("notification");
+    if (!notification) return;
     clearTimeout(notification.timeout);
     notification.textContent = sanitizeHTML(message);
     notification.className = `notification ${type} show`;
+    notification.setAttribute("aria-label", `${type}: ${message}`);
     notification.timeout = setTimeout(() => {
         notification.className = "notification";
     }, 3000);
@@ -1139,19 +1136,23 @@ function showNotification(message, type = "success") {
 
 function saveState() {
     try {
-        localStorage.setItem("studyFlowState", JSON.stringify(state));
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem("studyFlowState", JSON.stringify(state));
+        }
     } catch (e) {
-        showNotification("Failed to save data. Storage may be full or disabled.", "error");
+        showNotification("Failed to save data. Storage may be unavailable.", "error");
     }
 }
 
 function loadState() {
     try {
-        const savedState = localStorage.getItem("studyFlowState");
-        if (savedState) {
-            state = { ...defaultState, ...JSON.parse(savedState) };
-            applyTheme();
-            updateUI();
+        if (typeof localStorage !== 'undefined') {
+            const savedState = localStorage.getItem("studyFlowState");
+            if (savedState) {
+                state = { ...defaultState, ...JSON.parse(savedState) };
+                applyTheme();
+                updateUI();
+            }
         }
     } catch (e) {
         showNotification("Failed to load data. Starting with default settings.", "error");
@@ -1161,27 +1162,21 @@ function loadState() {
 function resetDaily() {
     const today = new Date().toDateString();
     if (state.stats.lastReviewDate !== today) {
-        const completedToday = state.tasks.some(task => task.completed);
-        state.tasks = state.tasks.filter(task => !task.completed);
-        state.reminders = state.reminders.filter(reminder => !reminder.completed);
+        console.log("Resetting daily stats for:", today);
         state.stats.tasksCompletedToday = 0;
         state.stats.studyTimeToday = 0;
         state.stats.lastReviewDate = today;
-        if (completedToday && state.tasks.length > 0) {
-            state.user.streak++;
-            showNotification("Streak increased!");
-        } else if (state.tasks.length > 0 && !completedToday) {
-            state.user.streak = 0;
-        }
         saveState();
         updateUI();
     }
 }
 
 function applyTheme() {
+    console.log("Applying theme:", state.theme);
     document.body.setAttribute("data-theme", state.theme);
     document.querySelectorAll(".theme-btn").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-theme") === state.theme);
+        btn.setAttribute("aria-pressed", btn.getAttribute("data-theme") === state.theme);
     });
 }
 
@@ -1203,8 +1198,14 @@ function initializeThemeSelector() {
 }
 
 function navigateTo(pageId) {
+    console.log("Navigating to:", pageId);
     document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
-    document.getElementById(pageId).classList.add("active");
+    const page = document.getElementById(pageId);
+    if (page) {
+        page.classList.add("active");
+        page.setAttribute("tabindex", "0");
+        page.focus();
+    }
     document.querySelectorAll(".nav-item").forEach(item => {
         const isActive = item.getAttribute("data-page") === pageId;
         item.classList.toggle("active", isActive);
@@ -1212,12 +1213,12 @@ function navigateTo(pageId) {
     });
     resetDaily();
     updateUI();
-    document.getElementById(pageId).focus();
 }
 
 function initializeNavigation() {
+    const pages = ["home", "scheduler", "tasks", "reminders", "progress", "profile"];
     document.querySelectorAll(".nav-item").forEach((item, index) => {
-        const pages = ["home", "scheduler", "tasks", "reminders", "progress", "profile"];
+        console.log(`Attaching listener to nav-item ${index}`);
         item.setAttribute("data-page", pages[index]);
         item.addEventListener("click", () => navigateTo(pages[index]));
         item.addEventListener("keydown", (e) => {
@@ -1245,36 +1246,26 @@ function validateStep(stepIndex) {
         return false;
     }
 
-    if (step.id === "schoolEnd" && state.quizAnswers.schoolStart) {
-        try {
-            const start = parseTime(state.quizAnswers.schoolStart);
-            const end = parseTime(value);
-            if (end <= start) {
-                showNotification("School end time must be after start time!", "error");
-                return false;
-            }
-        } catch (e) {
-            showNotification("Invalid time format!", "error");
+    if (step.id === "schoolEnd" && state.quizAnswers.schoolStart && value) {
+        const start = parseTime(state.quizAnswers.schoolStart);
+        const end = parseTime(value);
+        if (start && end && end <= start) {
+            showNotification("School end time must be after start time!", "error");
             return false;
         }
     }
 
-    if (step.id === "bedtime" && state.quizAnswers.wakeUp) {
-        try {
-            const wakeUp = parseTime(state.quizAnswers.wakeUp);
-            const bedtime = parseTime(value);
-            const wakeUpMinutes = wakeUp.getHours() * 60 + wakeUp.getMinutes();
+    if (step.id === "bedtime" && state.quizAnswers.wakeUp && value) {
+        const wakeUp = parseTime(state.quizAnswers.wakeUp);
+        const bedtime = parseTime(value);
+        if (wakeUp && bedtime) {
+            let wakeUpMinutes = wakeUp.getHours() * 60 + wakeUp.getMinutes();
             let bedtimeMinutes = bedtime.getHours() * 60 + bedtime.getMinutes();
-            if (bedtimeMinutes < wakeUpMinutes) {
-                bedtimeMinutes += 24 * 60;
-            }
+            if (bedtimeMinutes < wakeUpMinutes) bedtimeMinutes += 24 * 60;
             if (bedtimeMinutes <= wakeUpMinutes) {
                 showNotification("Bedtime must be after wake-up time!", "error");
                 return false;
             }
-        } catch (e) {
-            showNotification("Invalid time format!", "error");
-            return false;
         }
     }
 
@@ -1282,10 +1273,12 @@ function validateStep(stepIndex) {
 }
 
 function renderQuiz() {
+    console.log("Rendering quiz step:", state.currentQuizStep);
     const quizStepsContainer = document.getElementById("quizSteps");
+    if (!quizStepsContainer) return;
     quizStepsContainer.innerHTML = "";
     const fragment = document.createDocumentFragment();
-    
+
     quizSteps.forEach((step, index) => {
         const stepElement = document.createElement("div");
         stepElement.className = `quiz-step ${index === state.currentQuizStep ? 'active' : ''}`;
@@ -1309,19 +1302,27 @@ function renderQuiz() {
     quizStepsContainer.appendChild(fragment);
 
     const quizProgress = document.getElementById("quizProgress");
-    quizProgress.innerHTML = quizSteps.map((_, index) => `
-        <div class="progress-dot ${index === state.currentQuizStep ? 'active' : index < state.currentQuizStep ? 'completed' : ''}" role="status" aria-label="Question ${index + 1} ${index === state.currentQuizStep ? 'active' : index < state.currentQuizStep ? 'completed' : ''}"></div>
-    `).join('');
+    if (quizProgress) {
+        quizProgress.innerHTML = quizSteps.map((_, index) => `
+            <div class="progress-dot ${index === state.currentQuizStep ? 'active' : index < state.currentQuizStep ? 'completed' : ''}" role="status" aria-label="Question ${index + 1} ${index === state.currentQuizStep ? 'active' : index < state.currentQuizStep ? 'completed' : ''}"></div>
+        `).join('');
+    }
 
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
-    prevBtn.style.display = state.currentQuizStep === 0 ? "none" : "inline-flex";
-    nextBtn.textContent = state.currentQuizStep === quizSteps.length - 1 ? "Finish" : "Next";
-    nextBtn.disabled = !validateStep(state.currentQuizStep);
-
-    document.getElementById(quizSteps[state.currentQuizStep].id)?.addEventListener("input", () => {
+    if (prevBtn && nextBtn) {
+        prevBtn.style.display = state.currentQuizStep === 0 ? "none" : "inline-flex";
+        nextBtn.textContent = state.currentQuizStep === quizSteps.length - 1 ? "Finish" : "Next";
         nextBtn.disabled = !validateStep(state.currentQuizStep);
-    });
+    }
+
+    const input = document.getElementById(quizSteps[state.currentQuizStep].id);
+    if (input) {
+        input.addEventListener("input", () => {
+            nextBtn.disabled = !validateStep(state.currentQuizStep);
+        });
+        input.focus();
+    }
 }
 
 function prevStep() {
@@ -1344,111 +1345,139 @@ function nextStep() {
         renderQuiz();
     } else {
         generateSchedule();
-        document.getElementById("quizSteps").classList.add("hidden");
-        document.getElementById("quizProgress").classList.add("hidden");
-        document.getElementById("prevBtn").style.display = "none";
-        document.getElementById("nextBtn").style.display = "none";
-        document.getElementById("schedulePreview").classList.remove("hidden");
+        const quizStepsContainer = document.getElementById("quizSteps");
+        const quizProgress = document.getElementById("quizProgress");
+        const prevBtn = document.getElementById("prevBtn");
+        const nextBtn = document.getElementById("nextBtn");
+        if (quizStepsContainer) quizStepsContainer.classList.add("hidden");
+        if (quizProgress) quizProgress.classList.add("hidden");
+        if (prevBtn) prevBtn.style.display = "none";
+        if (nextBtn) nextBtn.style.display = "none";
+        const schedulePreview = document.getElementById("schedulePreview");
+        if (schedulePreview) schedulePreview.classList.remove("hidden");
     }
 }
 
 function generateSchedule() {
+    console.log("Generating schedule with answers:", state.quizAnswers);
     const { wakeUp, bedtime, schoolStart, schoolEnd, subjects, studyIntensity, exerciseType, exerciseDuration, hobbies, hobbyDuration, breakActivity, freeTimeActivity, timePreference } = state.quizAnswers;
+    if (!wakeUp || !bedtime) {
+        showNotification("Please provide wake-up and bedtime!", "error");
+        return;
+    }
     state.schedule = [];
     let currentTime = wakeUp;
-    const bedtimeDate = bedtime ? parseTime(bedtime) : new Date().setHours(23, 59, 0, 0);
+    const bedtimeDate = parseTime(bedtime) || new Date().setHours(23, 59, 0, 0);
+    const bedtimeMinutes = bedtimeDate.getHours() * 60 + bedtimeDate.getMinutes();
 
     const addTask = (title, description, duration, iconClass) => {
-        if (parseTime(currentTime) >= bedtimeDate) return false;
+        const parsedTime = parseTime(currentTime);
+        if (!parsedTime) return false;
+        let currentMinutes = parsedTime.getHours() * 60 + parsedTime.getMinutes();
+        if (currentMinutes + duration > bedtimeMinutes) {
+            console.log(`Skipping task "${title}" as it exceeds bedtime`);
+            return false;
+        }
         const taskId = `${currentTime}-${title}-${Date.now()}`;
         state.schedule.push({ id: taskId, time: currentTime, title, description, duration, iconClass, completed: false });
         currentTime = addMinutes(currentTime, duration);
         return true;
     };
 
-    addTask("Wake Up", "Start your day!", 0, "fas fa-sun");
-    addTask("Morning Routine", "Get ready for the day", 30, "fas fa-tooth");
+    addTask("Wake Up", "Start your day! 🌞", 0, "fas fa-sun");
+    addTask("Morning Routine", "Get ready for the day 🪥", 30, "fas fa-tooth");
 
     if ((timePreference === "Morning" || timePreference === "Both") && exerciseType && exerciseDuration) {
-        addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()}`, parseInt(exerciseDuration), "fas fa-dumbbell");
+        addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()} 💪`, parseInt(exerciseDuration), "fas fa-dumbbell");
     }
 
     if (schoolStart && parseTime(currentTime) < parseTime(schoolStart)) {
-        addTask("Free Time", freeTimeActivity || "Relax", 45, "fas fa-party-horn");
+        addTask("Free Time", freeTimeActivity || "Relax 🎉", 45, "fas fa-party-horn");
         currentTime = schoolStart;
     }
 
     if (schoolStart && schoolEnd) {
-        const schoolDuration = Math.round((parseTime(schoolEnd) - parseTime(schoolStart)) / 60000);
-        addTask("School", "Attend classes", schoolDuration, "fas fa-school");
-        currentTime = schoolEnd;
+        const start = parseTime(schoolStart);
+        const end = parseTime(schoolEnd);
+        if (start && end) {
+            const schoolDuration = Math.round((end - start) / 60000);
+            addTask("School", "Attend classes 📚", schoolDuration, "fas fa-school");
+            currentTime = schoolEnd;
+        }
     }
 
-    addTask("Lunch Break", "Enjoy your meal", 45, "fas fa-utensils");
+    addTask("Lunch Break", "Enjoy your meal 🍽️", 45, "fas fa-utensils");
 
     if (subjects) {
         const subjectsList = subjects.split(",").map(s => s.trim()).filter(s => s);
         const studyDuration = studyIntensity === "Chill" ? 30 : studyIntensity === "Balanced" ? 45 : 60;
         subjectsList.forEach(subject => {
-            if (!addTask(`Study: ${subject}`, `Focus on ${subject}`, studyDuration, "fas fa-book")) return;
-            addTask(breakActivity || "Break", "Take a short break", 10, "fas fa-coffee");
+            if (!addTask(`Study: ${subject}`, `Focus on ${subject} 📖`, studyDuration, "fas fa-book")) return;
+            addTask(breakActivity || "Break", "Take a short break ☕", 10, "fas fa-coffee");
         });
     }
 
     if ((timePreference === "Night" || timePreference === "Both") && exerciseType && exerciseDuration) {
-        addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()}`, parseInt(exerciseDuration), "fas fa-dumbbell");
+        addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()} 💪`, parseInt(exerciseDuration), "fas fa-dumbbell");
     }
 
     if (hobbies && hobbyDuration) {
         const hobbiesList = hobbies.split(",").map(h => h.trim()).filter(h => h);
-        addTask("Hobbies", `Enjoy ${hobbiesList.join(", ")}`, parseInt(hobbyDuration), "fas fa-paint-brush");
+        addTask("Hobbies", `Enjoy ${hobbiesList.join(", ")} 🎨`, parseInt(hobbyDuration), "fas fa-paint-brush");
     }
 
-    addTask("Free Time", freeTimeActivity || "Relax", 45, "fas fa-party-horn");
-    addTask("Bedtime", "Get some rest", 0, "fas fa-bed");
+    addTask("Free Time", freeTimeActivity || "Relax 🎉", 45, "fas fa-party-horn");
+    addTask("Bedtime", "Get some rest 😴", 0, "fas fa-bed");
 
     state.schedule.sort((a, b) => {
-        const timeA = parseTime(a.time);
-        const timeB = parseTime(b.time);
+        const timeA = parseTime(a.time) || new Date(0);
+        const timeB = parseTime(b.time) || new Date(0);
         return timeA - timeB;
     });
     renderSchedule();
 }
 
 function renderSchedule() {
+    console.log("Rendering schedule:", state.schedule);
     const scheduleDisplay = document.getElementById("scheduleDisplay");
-    scheduleDisplay.innerHTML = "";
-    const fragment = document.createDocumentFragment();
-    state.schedule.forEach(item => {
-        const scheduleItem = document.createElement("div");
-        scheduleItem.className = "schedule-item";
-        scheduleItem.setAttribute("role", "listitem");
-        scheduleItem.innerHTML = `
-            <div class="schedule-time">${sanitizeHTML(item.time)}</div>
-            <div class="schedule-dot"></div>
-            <div class="task-item ${item.completed ? 'completed' : ''} ${item.type || ''}">
-                <div class="task-checkbox ${item.completed ? 'checked' : ''}" role="checkbox" aria-checked="${item.completed}" aria-label="Toggle task completion" tabindex="0"></div>
-                <div class="task-content">
-                    <div class="task-title">${sanitizeHTML(item.title)}</div>
-                    <div class="task-meta">
-                        <span class="task-time">${sanitizeHTML(item.time)}</span>
-                        <span class="task-duration">${item.duration} min</span>
-                        <span class="fa-icon"><i class="${sanitizeHTML(item.iconClass)}"></i></span>
+    if (!scheduleDisplay) return;
+    requestAnimationFrame(() => {
+        scheduleDisplay.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        state.schedule.forEach((item, index) => {
+            const scheduleItem = document.createElement("div");
+            scheduleItem.className = "schedule-item";
+            scheduleItem.setAttribute("role", "listitem");
+            scheduleItem.setAttribute("aria-label", `Schedule item: ${item.title}`);
+            scheduleItem.innerHTML = `
+                <div class="schedule-time">${sanitizeHTML(item.time)}</div>
+                <div class="schedule-dot"></div>
+                <div class="task-item ${item.completed ? 'completed' : ''} ${item.type || ''}">
+                    <div class="task-checkbox ${item.completed ? 'checked' : ''}" role="checkbox" aria-checked="${item.completed}" aria-label="Toggle task completion" tabindex="0"></div>
+                    <div class="task-content">
+                        <div class="task-title">${sanitizeHTML(item.title)}</div>
+                        <div class="task-meta">
+                            <span class="task-time">${sanitizeHTML(item.time)}</span>
+                            <span class="task-duration">${item.duration} min</span>
+                            <span class="fa-icon"><i class="${sanitizeHTML(item.iconClass)}"></i></span>
+                        </div>
+                        <div>${sanitizeHTML(item.description)}</div>
                     </div>
-                    <div>${sanitizeHTML(item.description)}</div>
                 </div>
-            </div>
-        `;
-        scheduleItem.querySelector(".task-checkbox").addEventListener("click", () => toggleTask(item.id));
-        scheduleItem.querySelector(".task-checkbox").addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                toggleTask(item.id);
-            }
+            `;
+            fragment.appendChild(scheduleItem);
         });
-        fragment.appendChild(scheduleItem);
+        scheduleDisplay.appendChild(fragment);
+        scheduleDisplay.querySelectorAll(".task-checkbox").forEach((checkbox, i) => {
+            checkbox.addEventListener("click", () => toggleTask(state.schedule[i].id));
+            checkbox.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleTask(state.schedule[i].id);
+                }
+            });
+        });
     });
-    scheduleDisplay.appendChild(fragment);
 }
 
 function saveSchedule() {
@@ -1459,7 +1488,7 @@ function saveSchedule() {
     state.currentQuizStep = 0;
     state.quizAnswers = {};
     saveState();
-    showNotification("Schedule saved successfully!");
+    showNotification("Schedule saved successfully! 📅");
     navigateTo("home");
 }
 
@@ -1475,6 +1504,7 @@ function inferTaskType(title) {
 }
 
 function toggleTask(taskId) {
+    console.log("Toggling task:", taskId);
     const task = state.tasks.find(t => t.id === taskId);
     const reminder = state.reminders.find(r => r.id === taskId);
     const scheduleItem = state.schedule.find(s => s.id === taskId);
@@ -1492,25 +1522,34 @@ function toggleTask(taskId) {
             if (state.completedTasks.length > 50) state.completedTasks.shift();
             if (state.tasks.every(t => t.completed)) {
                 state.user.streak++;
-                state.stats.tasksCompletedToday = state.tasks.length;
-                showNotification("All tasks completed! Streak increased!");
+                state.stats.tasksCompletedToday = 0;
+                state.stats.studyTimeToday = 0;
+                state.tasks = [];
+                state.schedule = [];
+                state.reminders = [];
+                state.quizAnswers = {};
+                state.currentQuizStep = 0;
+                showNotification("All tasks completed! Streak increased! Create a new schedule! 🎉");
+                navigateTo("scheduler");
             } else {
-                showNotification("Task completed! +10 XP");
+                showNotification("Task completed! +10 XP ✅");
             }
         } else {
             state.stats.tasksCompletedToday = Math.max(0, state.stats.tasksCompletedToday - 1);
             if (task.type === "study") state.stats.studyTimeToday = Math.max(0, state.stats.studyTimeToday - task.duration / 60);
             state.user.xp = Math.max(0, state.user.xp - 10);
             state.completedTasks = state.completedTasks.filter(t => t.id !== taskId);
-            showNotification("Task unmarked.");
+            showNotification("Task unmarked. 🔄");
         }
 
         state.user.level = Math.floor(state.user.xp / 100) + 1;
         if (state.user.level > 1 && state.user.xp % 100 === 0) {
-            showNotification(`Level up! You are now Level ${state.user.level}!`);
+            showNotification(`Level up! You are now Level ${state.user.level}! 🏆`);
         }
         saveState();
         updateUI();
+    } else {
+        showNotification("Task not found!", "error");
     }
 }
 
@@ -1519,62 +1558,79 @@ function deleteTask(taskId) {
     state.schedule = state.schedule.filter(s => s.id !== taskId);
     state.reminders = state.reminders.filter(r => r.id !== taskId);
     saveState();
-    showNotification("Task deleted!");
+    showNotification("Task deleted! 🗑️");
     updateUI();
 }
 
 function renderTasks() {
+    console.log("Rendering tasks:", state.tasks);
     const tasksList = document.getElementById("tasksList");
-    tasksList.innerHTML = "";
-    const fragment = document.createDocumentFragment();
-    if (state.tasks.length) {
-        state.tasks.forEach(task => {
-            const taskElement = document.createElement("div");
-            taskElement.className = `task-item ${task.completed ? 'completed' : ''} ${task.type || ''}`;
-            taskElement.setAttribute("role", "listitem");
-            taskElement.innerHTML = `
-                <div class="task-checkbox ${task.completed ? 'checked' : ''}" role="checkbox" aria-checked="${task.completed}" aria-label="Toggle task completion" tabindex="0"></div>
-                <div class="task-content">
-                    <div class="task-title">${sanitizeHTML(task.title)}</div>
-                    <div class="task-meta">
-                        <span class="task-time">${sanitizeHTML(task.time)}</span>
-                        <span class="task-duration">${task.duration} min</span>
-                        <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
+    if (!tasksList) return;
+    requestAnimationFrame(() => {
+        tasksList.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        if (state.tasks.length) {
+            state.tasks.forEach((task, index) => {
+                const taskElement = document.createElement("div");
+                taskElement.className = `task-item ${task.completed ? 'completed' : ''} ${task.type || ''}`;
+                taskElement.setAttribute("role", "listitem");
+                taskElement.setAttribute("aria-label", `Task: ${task.title}, ${task.completed ? 'completed' : 'not completed'}`);
+                taskElement.innerHTML = `
+                    <div class="task-checkbox ${task.completed ? 'checked' : ''}" role="checkbox" aria-checked="${task.completed}" aria-label="Toggle task completion" tabindex="0"></div>
+                    <div class="task-content">
+                        <div class="task-title">${sanitizeHTML(task.title)}</div>
+                        <div class="task-meta">
+                            <span class="task-time">${sanitizeHTML(task.time)}</span>
+                            <span class="task-duration">${task.duration} min</span>
+                            <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
+                        </div>
+                        <div>${sanitizeHTML(task.description)}</div>
                     </div>
-                    <div>${sanitizeHTML(task.description)}</div>
-                </div>
-                <button class="btn btn-small btn-secondary" aria-label="Remove task">Remove</button>
-            `;
-            taskElement.querySelector(".task-checkbox").addEventListener("click", () => toggleTask(task.id));
-            taskElement.querySelector(".task-checkbox").addEventListener("keydown", (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleTask(task.id);
-                }
+                    <button class="btn btn-small btn-secondary" aria-label="Remove task">Remove</button>
+                `;
+                fragment.appendChild(taskElement);
             });
-            taskElement.querySelector(".btn-secondary").addEventListener("click", () => deleteTask(task.id));
-            fragment.appendChild(taskElement);
-        });
-    } else {
-        const emptyState = document.createElement("div");
-        emptyState.className = "empty-state";
-        emptyState.innerHTML = `
-            <div class="empty-icon"><i class="fas fa-check-square"></i></div>
-            <div class="empty-title">No Tasks Yet</div>
-            <div class="empty-description">Create a schedule to generate your tasks!</div>
-        `;
-        fragment.appendChild(emptyState);
-    }
-    tasksList.appendChild(fragment);
+            tasksList.appendChild(fragment);
+            tasksList.querySelectorAll(".task-checkbox").forEach((checkbox, i) => {
+                checkbox.addEventListener("click", () => toggleTask(state.tasks[i].id));
+                checkbox.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleTask(state.tasks[i].id);
+                    }
+                });
+            });
+            tasksList.querySelectorAll(".btn-secondary").forEach((button, i) => {
+                button.addEventListener("click", () => deleteTask(state.tasks[i].id));
+            });
+        } else {
+            tasksList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="fas fa-check-square"></i></div>
+                    <div class="empty-title">No Tasks Yet</div>
+                    <div class="empty-description">Create a schedule to generate your tasks! 📅</div>
+                </div>
+            `;
+        }
+    });
 }
 
 function addReminder() {
-    const time = document.getElementById("reminderTime").value;
-    const text = document.getElementById("reminderText").value.trim();
+    const time = document.getElementById("reminderTime")?.value;
+    const text = document.getElementById("reminderText")?.value.trim();
 
     if (!time || !text) {
         showNotification("Please enter both time and task description!", "error");
         return;
+    }
+
+    const bedtime = state.quizAnswers.bedtime ? parseTime(state.quizAnswers.bedtime) : null;
+    if (bedtime) {
+        const reminderTime = parseTime(time);
+        if (reminderTime && reminderTime > bedtime) {
+            showNotification("Reminder time cannot be after bedtime!", "error");
+            return;
+        }
     }
 
     const reminderId = `${time}-${text}-${Date.now()}`;
@@ -1592,11 +1648,23 @@ function addReminder() {
     state.reminders.push(reminder);
     state.tasks.push({ ...reminder });
     state.schedule.push({ ...reminder });
-    state.reminders.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-    state.tasks.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-    state.schedule.sort((a, b) => parseTime(a.time) - parseTime(b.time));
+    state.reminders.sort((a, b) => {
+        const timeA = parseTime(a.time) || new Date(0);
+        const timeB = parseTime(b.time) || new Date(0);
+        return timeA - timeB;
+    });
+    state.tasks.sort((a, b) => {
+        const timeA = parseTime(a.time) || new Date(0);
+        const timeB = parseTime(b.time) || new Date(0);
+        return timeA - timeB;
+    });
+    state.schedule.sort((a, b) => {
+        const timeA = parseTime(a.time) || new Date(0);
+        const timeB = parseTime(b.time) || new Date(0);
+        return timeA - timeB;
+    });
     saveState();
-    showNotification("Reminder added!");
+    showNotification("Reminder added! 🔔");
     document.getElementById("reminderTime").value = "";
     document.getElementById("reminderText").value = "";
     renderReminders();
@@ -1609,94 +1677,109 @@ function deleteReminder(id) {
         state.tasks = state.tasks.filter(t => t.id !== id);
         state.schedule = state.schedule.filter(s => s.id !== id);
         saveState();
-        showNotification("Reminder deleted!");
+        showNotification("Reminder deleted! 🗑️");
         renderReminders();
     }
 }
 
 function renderReminders() {
+    console.log("Rendering reminders:", state.reminders);
     const remindersList = document.getElementById("remindersList");
-    remindersList.innerHTML = "";
-    const fragment = document.createDocumentFragment();
-    if (state.reminders.length) {
-        state.reminders.forEach(reminder => {
-            const reminderElement = document.createElement("div");
-            reminderElement.className = `task-item ${reminder.completed ? 'completed' : ''} ${reminder.type || ''}`;
-            reminderElement.setAttribute("role", "listitem");
-            reminderElement.innerHTML = `
-                <div class="task-checkbox ${reminder.completed ? 'checked' : ''}" role="checkbox" aria-checked="${reminder.completed}" aria-label="Toggle reminder completion" tabindex="0"></div>
-                <div class="task-content">
-                    <div class="task-title">${sanitizeHTML(reminder.title)}</div>
-                    <div class="task-meta">
-                        <span class="task-time">${sanitizeHTML(reminder.time)}</span>
-                        <span class="task-duration">${reminder.duration} min</span>
-                        <span class="fa-icon"><i class="${sanitizeHTML(reminder.iconClass)}"></i></span>
+    if (!remindersList) return;
+    requestAnimationFrame(() => {
+        remindersList.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        if (state.reminders.length) {
+            state.reminders.forEach((reminder, index) => {
+                const reminderElement = document.createElement("div");
+                reminderElement.className = `task-item ${reminder.completed ? 'completed' : ''} ${reminder.type || ''}`;
+                reminderElement.setAttribute("role", "listitem");
+                reminderElement.setAttribute("aria-label", `Reminder: ${reminder.title}, ${reminder.completed ? 'completed' : 'not completed'}`);
+                reminderElement.innerHTML = `
+                    <div class="task-checkbox ${reminder.completed ? 'checked' : ''}" role="checkbox" aria-checked="${reminder.completed}" aria-label="Toggle reminder completion" tabindex="0"></div>
+                    <div class="task-content">
+                        <div class="task-title">${sanitizeHTML(reminder.title)}</div>
+                        <div class="task-meta">
+                            <span class="task-time">${sanitizeHTML(reminder.time)}</span>
+                            <span class="task-duration">${reminder.duration} min</span>
+                            <span class="fa-icon"><i class="${sanitizeHTML(reminder.iconClass)}"></i></span>
+                        </div>
+                        <div>${sanitizeHTML(reminder.description)}</div>
                     </div>
-                    <div>${sanitizeHTML(reminder.description)}</div>
-                </div>
-                <button class="btn btn-small btn-secondary" aria-label="Remove reminder">Remove</button>
-            `;
-            reminderElement.querySelector(".task-checkbox").addEventListener("click", () => toggleTask(reminder.id));
-            reminderElement.querySelector(".task-checkbox").addEventListener("keydown", (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleTask(reminder.id);
-                }
+                    <button class="btn btn-small btn-secondary" aria-label="Remove reminder">Remove</button>
+                `;
+                fragment.appendChild(reminderElement);
             });
-            reminderElement.querySelector(".btn-secondary").addEventListener("click", () => deleteReminder(reminder.id));
-            fragment.appendChild(reminderElement);
-        });
-    } else {
-        const emptyState = document.createElement("div");
-        emptyState.className = "empty-state";
-        emptyState.innerHTML = `
-            <div class="empty-icon"><i class="fas fa-bell"></i></div>
-            <div class="empty-title">No Reminders</div>
-            <div class="empty-description">Add some reminders to stay on track!</div>
-        `;
-        fragment.appendChild(emptyState);
-    }
-    remindersList.appendChild(fragment);
+            remindersList.appendChild(fragment);
+            remindersList.querySelectorAll(".task-checkbox").forEach((checkbox, i) => {
+                checkbox.addEventListener("click", () => toggleTask(state.reminders[i].id));
+                checkbox.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleTask(state.reminders[i].id);
+                    }
+                });
+            });
+            remindersList.querySelectorAll(".btn-secondary").forEach((button, i) => {
+                button.addEventListener("click", () => deleteReminder(state.reminders[i].id));
+            });
+        } else {
+            remindersList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="fas fa-bell"></i></div>
+                    <div class="empty-title">No Reminders</div>
+                    <div class="empty-description">Add some reminders to stay on track! 🔔</div>
+                </div>
+            `;
+        }
+    });
 }
 
 function renderProgress() {
-    document.getElementById("totalStreak").textContent = state.user.streak;
-    document.getElementById("totalTasksCompleted").textContent = state.completedTasks.length;
-    document.getElementById("totalXP").textContent = state.user.xp;
+    console.log("Rendering progress:", state.user, state.completedTasks);
+    const totalStreak = document.getElementById("totalStreak");
+    const totalTasksCompleted = document.getElementById("totalTasksCompleted");
+    const totalXP = document.getElementById("totalXP");
+    if (totalStreak) totalStreak.textContent = state.user.streak;
+    if (totalTasksCompleted) totalTasksCompleted.textContent = state.completedTasks.length;
+    if (totalXP) totalXP.textContent = state.user.xp;
 
     const completedTasksList = document.getElementById("completedTasksList");
-    completedTasksList.innerHTML = "";
-    const fragment = document.createDocumentFragment();
-    if (state.completedTasks.length) {
-        state.completedTasks.forEach(task => {
-            const taskElement = document.createElement("div");
-            taskElement.className = "task-item completed";
-            taskElement.setAttribute("role", "listitem");
-            taskElement.innerHTML = `
-                <div class="task-checkbox checked" role="checkbox" aria-checked="true" aria-label="Completed task"></div>
-                <div class="task-content">
-                    <div class="task-title">${sanitizeHTML(task.title)}</div>
-                    <div class="task-meta">
-                        <span class="task-time">${sanitizeHTML(task.time)}</span>
-                        <span class="task-duration">${task.duration} min</span>
-                        <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
+    if (!completedTasksList) return;
+    requestAnimationFrame(() => {
+        completedTasksList.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        if (state.completedTasks.length) {
+            state.completedTasks.forEach(task => {
+                const taskElement = document.createElement("div");
+                taskElement.className = "task-item completed";
+                taskElement.setAttribute("role", "listitem");
+                taskElement.setAttribute("aria-label", `Completed task: ${task.title}`);
+                taskElement.innerHTML = `
+                    <div class="task-checkbox checked" role="checkbox" aria-checked="true" aria-label="Completed task"></div>
+                    <div class="task-content">
+                        <div class="task-title">${sanitizeHTML(task.title)}</div>
+                        <div class="task-meta">
+                            <span class="task-time">${sanitizeHTML(task.time)}</span>
+                            <span class="task-duration">${task.duration} min</span>
+                            <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
+                        </div>
+                        <div>${sanitizeHTML(task.description)} (Completed: ${sanitizeHTML(task.completionDate)})</div>
                     </div>
-                    <div>${sanitizeHTML(task.description)} (Completed: ${sanitizeHTML(task.completionDate)})</div>
+                `;
+                fragment.appendChild(taskElement);
+            });
+        } else {
+            completedTasksList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="empty-title">No Completed Tasks</div>
+                    <div class="empty-description">Complete some tasks to see your progress! 🏆</div>
                 </div>
             `;
-            fragment.appendChild(taskElement);
-        });
-    } else {
-        const emptyTasksList = document.createElement("div");
-        emptyTasksList.className = "empty-state";
-        emptyTasksList.innerHTML = `
-            <div class="empty-icon"><i class="fas fa-trophy"></i></div>
-            <div class="empty-title">No Completed Tasks</div>
-            <div class="empty-description">Complete some tasks to see your progress!</div>
-        `;
-        fragment.appendChild(emptyTasksList);
-    }
-    completedTasksList.appendChild(fragment);
+        }
+        completedTasksList.appendChild(fragment);
+    });
 }
 
 function changeAvatar() {
@@ -1704,17 +1787,17 @@ function changeAvatar() {
     let currentIndex = avatars.indexOf(state.user.avatar);
     state.user.avatar = avatars[(currentIndex + 1) % avatars.length];
     saveState();
-    showNotification("Avatar changed!");
+    showNotification("Avatar changed! 😎");
     updateUI();
 }
 
 function saveHobbies() {
-    const hobbiesInput = document.getElementById("hobbiesInput").value.trim();
+    const hobbiesInput = document.getElementById("hobbiesInput")?.value.trim();
     if (hobbiesInput) {
         state.user.hobbies = hobbiesInput.split(",").map(h => h.trim()).filter(h => h);
         document.getElementById("hobbiesInput").value = "";
         saveState();
-        showNotification("Hobbies saved!");
+        showNotification("Hobbies saved! 🎨");
         renderHobbies();
     } else {
         showNotification("Please enter at least one hobby!", "error");
@@ -1722,40 +1805,45 @@ function saveHobbies() {
 }
 
 function renderHobbies() {
+    console.log("Rendering hobbies:", state.user.hobbies);
     const hobbiesList = document.getElementById("hobbiesList");
-    hobbiesList.innerHTML = "";
-    const fragment = document.createDocumentFragment();
-    if (state.user.hobbies.length) {
-        state.user.hobbies.forEach(hobby => {
-            const hobbyElement = document.createElement("div");
-            hobbyElement.className = "task-item";
-            hobbyElement.setAttribute("role", "listitem");
-            hobbyElement.innerHTML = `
-                <div class="task-content">
-                    <div class="task-title">${sanitizeHTML(hobby)}</div>
-                    <div class="fa-icon"><i class="fas fa-paint-brush"></i></div>
+    if (!hobbiesList) return;
+    requestAnimationFrame(() => {
+        hobbiesList.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        if (state.user.hobbies.length) {
+            state.user.hobbies.forEach(hobby => {
+                const hobbyElement = document.createElement("div");
+                hobbyElement.className = "task-item";
+                hobbyElement.setAttribute("role", "listitem");
+                hobbyElement.setAttribute("aria-label", `Hobby: ${hobby}`);
+                hobbyElement.innerHTML = `
+                    <div class="task-content">
+                        <div class="task-title">${sanitizeHTML(hobby)}</div>
+                        <div class="fa-icon"><i class="fas fa-paint-brush"></i></div>
+                    </div>
+                `;
+                fragment.appendChild(hobbyElement);
+            });
+        } else {
+            hobbiesList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="fas fa-paint-brush"></i></div>
+                    <div class="empty-title">No Hobbies Added</div>
+                    <div class="empty-description">Add your hobbies to personalize your schedule! 🎨</div>
                 </div>
             `;
-            fragment.appendChild(hobbyElement);
-        });
-    } else {
-        const emptyState = document.createElement("div");
-        emptyState.className = "empty-state";
-        emptyState.innerHTML = `
-            <div class="empty-icon"><i class="fas fa-paint-brush"></i></div>
-            <div class="empty-title">No Hobbies Added</div>
-            <div class="empty-description">Add your hobbies to personalize your schedule!</div>
-        `;
-        fragment.appendChild(emptyState);
-    }
-    hobbiesList.appendChild(fragment);
+        }
+        hobbiesList.appendChild(fragment);
+    });
 }
 
 function toggleQuickAddForm() {
     const form = document.getElementById("quickAddForm");
+    if (!form) return;
     form.classList.toggle("active");
     if (form.classList.contains("active")) {
-        document.getElementById("quickTaskTime").focus();
+        document.getElementById("quickTaskTime")?.focus();
     } else {
         document.getElementById("quickTaskTime").value = "";
         document.getElementById("quickTaskText").value = "";
@@ -1763,12 +1851,21 @@ function toggleQuickAddForm() {
 }
 
 function addQuickTask() {
-    const time = document.getElementById("quickTaskTime").value;
-    const text = document.getElementById("quickTaskText").value.trim();
+    const time = document.getElementById("quickTaskTime")?.value;
+    const text = document.getElementById("quickTaskText")?.value.trim();
 
     if (!time || !text) {
         showNotification("Please enter both time and task description!", "error");
         return;
+    }
+
+    const bedtime = state.quizAnswers.bedtime ? parseTime(state.quizAnswers.bedtime) : null;
+    if (bedtime) {
+        const taskTime = parseTime(time);
+        if (taskTime && taskTime > bedtime) {
+            showNotification("Task time cannot be after bedtime!", "error");
+            return;
+        }
     }
 
     const taskId = `${time}-${text}-${Date.now()}`;
@@ -1783,14 +1880,27 @@ function addQuickTask() {
         type: inferTaskType(text)
     };
 
+    console.log("Adding task:", task);
     state.tasks.push(task);
     state.schedule.push(task);
     state.reminders.push({ ...task, id: `${time}-${text}-${Date.now()}` });
-    state.tasks.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-    state.schedule.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-    state.reminders.sort((a, b) => parseTime(a.time) - parseTime(b.time));
+    state.tasks.sort((a, b) => {
+        const timeA = parseTime(a.time) || new Date(0);
+        const timeB = parseTime(b.time) || new Date(0);
+        return timeA - timeB;
+    });
+    state.schedule.sort((a, b) => {
+        const timeA = parseTime(a.time) || new Date(0);
+        const timeB = parseTime(b.time) || new Date(0);
+        return timeA - timeB;
+    });
+    state.reminders.sort((a, b) => {
+        const timeA = parseTime(a.time) || new Date(0);
+        const timeB = parseTime(b.time) || new Date(0);
+        return timeA - timeB;
+    });
     saveState();
-    showNotification("Task added!");
+    showNotification("Task added! ✅");
     document.getElementById("quickTaskTime").value = "";
     document.getElementById("quickTaskText").value = "";
     toggleQuickAddForm();
@@ -1798,96 +1908,167 @@ function addQuickTask() {
 }
 
 function updateUI() {
-    document.getElementById("welcomeName").textContent = `Hello, ${sanitizeHTML(state.user.name)}!`;
-    document.getElementById("welcomeAvatar").innerHTML = `<i class="${sanitizeHTML(state.user.avatar)}"></i>`;
-    document.getElementById("dayStreak").textContent = state.user.streak;
-    document.getElementById("tasksCompletedToday").textContent = state.stats.tasksCompletedToday;
-    document.getElementById("studyTimeToday").textContent = state.stats.studyTimeToday.toFixed(1);
+    console.log("Updating UI with state:", state);
+    const welcomeName = document.getElementById("welcomeName");
+    const welcomeAvatar = document.getElementById("welcomeAvatar");
+    if (welcomeName) welcomeName.textContent = `Hello, ${sanitizeHTML(state.user.name)}!`;
+    if (welcomeAvatar) welcomeAvatar.innerHTML = `<i class="${sanitizeHTML(state.user.avatar)}"></i>`;
+
+    const dayStreak = document.getElementById("dayStreak");
+    const tasksCompletedToday = document.getElementById("tasksCompletedToday");
+    const studyTimeToday = document.getElementById("studyTimeToday");
+    if (dayStreak) dayStreak.textContent = state.user.streak;
+    if (tasksCompletedToday) tasksCompletedToday.textContent = state.stats.tasksCompletedToday;
+    if (studyTimeToday) studyTimeToday.textContent = state.stats.studyTimeToday.toFixed(1);
 
     const progressRing = document.getElementById("progressRing");
-    const xpProgress = (state.user.xp % 100) / 100;
-    const circumference = 264;
-    progressRing.style.strokeDashoffset = circumference * (1 - xpProgress);
+    if (progressRing) {
+        const xpProgress = (state.user.xp % 100) / 100;
+        const circumference = 264;
+        progressRing.style.strokeDashoffset = circumference * (1 - xpProgress);
+    }
 
     const todaySchedule = document.getElementById("todaySchedule");
-    todaySchedule.innerHTML = "";
-    const upcomingTasks = state.tasks.filter(task => !task.completed).slice(0, 5);
-    const fragment = document.createDocumentFragment();
-    if (upcomingTasks.length) {
-        upcomingTasks.forEach(task => {
-            const scheduleItem = document.createElement("div");
-            scheduleItem.className = "schedule-item";
-            scheduleItem.setAttribute("role", "listitem");
-            scheduleItem.innerHTML = `
-                <div class="schedule-time">${sanitizeHTML(task.time)}</div>
-                <div class="schedule-dot"></div>
-                <div class="task-item ${task.completed ? 'completed' : ''} ${task.type || ''}">
-                    <div class="task-checkbox ${task.completed ? 'checked' : ''}" role="checkbox" aria-checked="${task.completed}" aria-label="Toggle task completion" tabindex="0"></div>
-                    <div class="task-content">
-                        <div class="task-title">${sanitizeHTML(task.title)}</div>
-                        <div class="task-meta">
-                            <span class="task-time">${sanitizeHTML(task.time)}</span>
-                            <span class="task-duration">${task.duration} min</span>
-                            <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
+    if (todaySchedule) {
+        requestAnimationFrame(() => {
+            todaySchedule.innerHTML = "";
+            const upcomingTasks = state.tasks.filter(task => !task.completed).slice(0, 5);
+            const fragment = document.createDocumentFragment();
+            if (upcomingTasks.length) {
+                upcomingTasks.forEach((task, index) => {
+                    const scheduleItem = document.createElement("div");
+                    scheduleItem.className = "schedule-item";
+                    scheduleItem.setAttribute("role", "listitem");
+                    scheduleItem.setAttribute("aria-label", `Task: ${task.title}, ${task.completed ? 'completed' : 'not completed'}`);
+                    scheduleItem.innerHTML = `
+                        <div class="schedule-time">${sanitizeHTML(task.time)}</div>
+                        <div class="schedule-dot"></div>
+                        <div class="task-item ${task.completed ? 'completed' : ''} ${task.type || ''}">
+                            <div class="task-checkbox ${task.completed ? 'checked' : ''}" role="checkbox" aria-checked="${task.completed}" aria-label="Toggle task completion" tabindex="0"></div>
+                            <div class="task-content">
+                                <div class="task-title">${sanitizeHTML(task.title)}</div>
+                                <div class="task-meta">
+                                    <span class="task-time">${sanitizeHTML(task.time)}</span>
+                                    <span class="task-duration">${task.duration} min</span>
+                                    <span class="fa-icon"><i class="${sanitizeHTML(task.iconClass)}"></i></span>
+                                </div>
+                                <div>${sanitizeHTML(task.description)}</div>
+                            </div>
                         </div>
-                        <div>${sanitizeHTML(task.description)}</div>
+                    `;
+                    fragment.appendChild(scheduleItem);
+                });
+                todaySchedule.appendChild(fragment);
+                todaySchedule.querySelectorAll(".task-checkbox").forEach((checkbox, i) => {
+                    checkbox.addEventListener("click", () => toggleTask(upcomingTasks[i].id));
+                    checkbox.addEventListener("keydown", (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            toggleTask(upcomingTasks[i].id);
+                        }
+                    });
+                });
+            } else {
+                todaySchedule.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="fas fa-calendar"></i></div>
+                        <div class="empty-title">No Schedule Yet</div>
+                        <div class="empty-description">Create your daily schedule to get started! 📅</div>
+                        <button class="btn mt-2" aria-label="Create new schedule">Create Schedule</button>
                     </div>
-                </div>
-            `;
-            scheduleItem.querySelector(".task-checkbox").addEventListener("click", () => toggleTask(task.id));
-            scheduleItem.querySelector(".task-checkbox").addEventListener("keydown", (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleTask(task.id);
+                `;
+                todayScheduleBtn = todaySchedule.querySelector("button.btn");
+                if (todayScheduleBtn) {
+                    todayScheduleBtn.addEventListener("click", () => navigateTo("scheduler"));
                 }
-            });
-            fragment.appendChild(scheduleItem);
+            }
         });
-    } else {
-        const emptyState = document.createElement("div");
-        emptyState.className = "empty-state";
-        emptyState.innerHTML = `
-            <div class="empty-icon"><i class="fas fa-calendar"></i></div>
-            <div class="empty-title">No Schedule Yet</div>
-            <div class="empty-description">Create your daily schedule to get started!</div>
-            <button class="btn mt-20" aria-label="Create new schedule">Create Schedule</button>
-        `;
-        emptyState.querySelector("button").addEventListener("click", () => navigateTo("scheduler"));
-        fragment.appendChild(emptyState);
     }
-    todaySchedule.appendChild(fragment);
 
-    document.getElementById("profileName").textContent = sanitizeHTML(state.user.name);
-    document.getElementById("profileAvatar").innerHTML = `<i class="${sanitizeHTML(state.user.avatar)}"></i>`;
-    document.getElementById("profileLevel").textContent = state.user.level;
-    document.getElementById("profileXP").textContent = state.user.xp;
-    document.getElementById("xpFill").style.width = `${(state.user.xp % 100)}%`;
-    document.getElementById("currentXP").textContent = state.user.xp % 100;
-    document.getElementById("nextLevelXP").textContent = 100;
+    const profileName = document.getElementById("profileName");
+    const profileAvatar = document.createElement("div");
+    const profileLevel = document.getElementById("profileLevel");
+    const profileXP = document.createElement("div");
+    const xpFill = document.getElementById("xpFill");
+    const currentXP = document.createElement("span");
+    const nextLevelXP = document.createElement("span");
+    if (profileName) profileName.textContent = sanitizeHTML(state.user.name);
+    if (xpFill) xpFill.style.width = `${(state.user.xp % 100)}%`;
+    if (profileLevel) profileLevel.textContent = state.user.level;
+    const profileSection = document.getElementById("profile");
+    if (profileSection) {
+        profileAvatar.id = "profileAvatar";
+        profileAvatar.innerHTML = `<i class="${sanitizeHTML(state.user.avatar)}"></i>`;
+        if (!document.getElementById("profileAvatar")) {
+            profileSection.insertBefore(profileAvatar, profileSection.firstChild);
+        }
+        profileXP.id = "profileXP";
+        profileXP.textContent = state.user.xp;
+        if (!document.getElementById("profileXP")) {
+            profileSection.appendChild(profileXP);
+        }
+        currentXP.id = "currentXP";
+        currentXP.textContent = state.user.xp % 100;
+        if (!document.getElementById("currentXP")) {
+            profileSection.appendChild(currentXP);
+        }
+        nextLevelXP.id = "nextLevelXP";
+        nextLevelXP.textContent = 100;
+        if (!document.getElementById("nextLevelXP")) {
+            profileSection.appendChild(nextLevelXP);
+        }
+    }
+    const existingProfileAvatar = document.getElementById("profileAvatar");
+    if (existingProfileAvatar) {
+        existingProfileAvatar.addEventListener("click", changeAvatar);
+    }
 
     renderTasks();
     renderReminders();
     renderProgress();
     renderHobbies();
-    if (document.getElementById("scheduler").classList.contains("active")) {
+    if (document.getElementById("scheduler")?.classList.contains("active")) {
         renderQuiz();
+        const quizStepsContainer = document.getElementById("quizSteps");
+        const schedulePreview = document.getElementById("schedulePreview");
+        if (state.tasks.length === 0 && quizStepsContainer && schedulePreview) {
+            quizStepsContainer.classList.remove("hidden");
+            schedulePreview.classList.add("hidden");
+            const prevBtn = document.getElementById("prevBtn");
+            const nextBtn = document.getElementById("nextBtn");
+            if (prevBtn) prevBtn.style.display = "inline-flex";
+            if (nextBtn) nextBtn.style.display = "inline-flex";
+        }
     }
 }
 
 function initialize() {
+    console.log("Initializing app");
     loadState();
     initializeNavigation();
     initializeThemeSelector();
-    document.getElementById("prevBtn").addEventListener("click", prevStep);
-    document.getElementById("nextBtn").addEventListener("click", nextStep);
-    document.getElementById("schedulePreview").querySelector("button").addEventListener("click", saveSchedule);
-    document.getElementById("reminders").querySelector(".btn").addEventListener("click", addReminder);
-    document.getElementById("profileAvatar").addEventListener("click", changeAvatar);
-    document.getElementById("welcomeAvatar").addEventListener("click", () => navigateTo("profile"));
-    document.getElementById("profile").querySelector(".btn").addEventListener("click", saveHobbies);
-    document.getElementById("quickAddForm").parentElement.querySelector(".btn-small").addEventListener("click", toggleQuickAddForm);
-    document.getElementById("quickAddForm").querySelector(".btn").addEventListener("click", addQuickTask);
-    document.getElementById("quickAddForm").querySelector(".btn-secondary").addEventListener("click", toggleQuickAddForm);
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const saveScheduleBtn = document.getElementById("schedulePreview")?.querySelector("button");
+    const addReminderBtn = document.getElementById("reminders")?.querySelector(".btn");
+    const profileAvatar = document.getElementById("profileAvatar");
+    const welcomeAvatar = document.getElementById("welcomeAvatar");
+    const saveHobbiesBtn = document.getElementById("profile")?.querySelector(".btn");
+    const toggleQuickAddBtn = document.getElementById("quickAddForm")?.parentElement.querySelector(".btn-small");
+    const addQuickTaskBtn = document.getElementById("quickAddForm")?.querySelector(".btn");
+    const cancelQuickTaskBtn = document.getElementById("quickAddForm")?.querySelector(".btn-secondary");
+
+    if (prevBtn) prevBtn.addEventListener("click", prevStep);
+    if (nextBtn) nextBtn.addEventListener("click", nextStep);
+    if (saveScheduleBtn) saveScheduleBtn.addEventListener("click", saveSchedule);
+    if (addReminderBtn) addReminderBtn.addEventListener("click", addReminder);
+    if (profileAvatar) profileAvatar.addEventListener("click", changeAvatar);
+    if (welcomeAvatar) welcomeAvatar.addEventListener("click", () => navigateTo("profile"));
+    if (saveHobbiesBtn) saveHobbiesBtn.addEventListener("click", saveHobbies);
+    if (toggleQuickAddBtn) toggleQuickAddBtn.addEventListener("click", toggleQuickAddForm);
+    if (addQuickTaskBtn) addQuickTaskBtn.addEventListener("click", addQuickTask);
+    if (cancelQuickTaskBtn) cancelQuickTaskBtn.addEventListener("click", toggleQuickAddForm);
+
     updateUI();
 }
 
