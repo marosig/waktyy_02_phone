@@ -1086,6 +1086,7 @@ const quizSteps = [
     { id: "bedtime", question: "What time do you go to bed?", type: "time", required: true },
     { id: "studyIntensity", question: "What's your study intensity?", type: "select", options: ["Chill", "Balanced", "Intense"], required: true },
     { id: "subjects", question: "What subjects are you studying? (comma-separated)", type: "text", required: true },
+    { id: "externalWork", question: "Do you have any external work today? (e.g., job, volunteering)", type: "text", required: false },
     { id: "exerciseType", question: "What type of exercise do you do?", type: "select", options: ["Running", "Yoga", "Gym", "Other"], required: false },
     { id: "exerciseDuration", question: "How long do you exercise? (minutes, min 30)", type: "number", min: 30, required: false },
     { id: "hobbies", question: "What are your hobbies? (comma-separated)", type: "text", required: false },
@@ -1125,6 +1126,20 @@ function addMinutes(time, minutes) {
     return formatTime(date);
 }
 
+function hasTimeConflict(newTaskTime, duration, existingTasks, bedtime) {
+    const newStart = parseTime(newTaskTime);
+    if (!newStart) return true;
+    const newEnd = new Date(newStart.getTime() + duration * 60000);
+    if (bedtime && newEnd > bedtime) return true;
+    return existingTasks.some(task => {
+        const taskStart = parseTime(task.time);
+        const taskEnd = new Date(taskStart.getTime() + task.duration * 60000);
+        return (newStart >= taskStart && newStart < taskEnd) ||
+               (newEnd > taskStart && newEnd <= taskEnd) ||
+               (newStart <= taskStart && newEnd >= taskEnd);
+    });
+}
+
 function showNotification(message, type = "success") {
     const notification = document.getElementById("notification");
     if (!notification) return;
@@ -1141,9 +1156,11 @@ function saveState() {
     try {
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem("studyFlowState", JSON.stringify(state));
+        } else {
+            showNotification("Storage unavailable. Data will not persist.", "error");
         }
     } catch (e) {
-        showNotification("Failed to save data. Storage may be unavailable.", "error");
+        showNotification("Failed to save data.", "error");
     }
 }
 
@@ -1158,24 +1175,25 @@ function loadState() {
             }
         }
     } catch (e) {
-        showNotification("Failed to load data. Starting with default settings.", "error");
+        showNotification("Failed to load data.", "error");
     }
 }
 
 function resetDaily() {
     const today = new Date().toDateString();
     if (state.stats.lastReviewDate !== today) {
-        console.log("Resetting daily stats for:", today);
         state.stats.tasksCompletedToday = 0;
         state.stats.studyTimeToday = 0;
         state.stats.lastReviewDate = today;
+        state.tasks = state.tasks.filter(task => !task.completed);
+        state.schedule = state.schedule.filter(task => !task.completed);
+        state.reminders = state.reminders.filter(task => !task.completed);
         saveState();
         updateUI();
     }
 }
 
 function applyTheme() {
-    console.log("Applying theme:", state.theme);
     document.body.setAttribute("data-theme", state.theme);
     document.querySelectorAll(".theme-btn").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-theme") === state.theme);
@@ -1191,7 +1209,7 @@ function initializeThemeSelector() {
             saveState();
             showNotification(`Theme changed to ${state.theme}!`);
         });
-        btn.addEventListener("keydown", (e) => {
+        btn.addEventListener("keydown", e => {
             if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 btn.click();
@@ -1201,7 +1219,6 @@ function initializeThemeSelector() {
 }
 
 function navigateTo(pageId) {
-    console.log("Navigating to:", pageId);
     document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
     const page = document.getElementById(pageId);
     if (page) {
@@ -1221,10 +1238,9 @@ function navigateTo(pageId) {
 function initializeNavigation() {
     const pages = ["home", "scheduler", "tasks", "reminders", "progress", "profile"];
     document.querySelectorAll(".nav-item").forEach((item, index) => {
-        console.log(`Attaching listener to nav-item ${index}`);
         item.setAttribute("data-page", pages[index]);
         item.addEventListener("click", () => navigateTo(pages[index]));
-        item.addEventListener("keydown", (e) => {
+        item.addEventListener("keydown", e => {
             if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 navigateTo(pages[index]);
@@ -1276,7 +1292,6 @@ function validateStep(stepIndex) {
 }
 
 function renderQuiz() {
-    console.log("Rendering quiz step:", state.currentQuizStep);
     const quizStepsContainer = document.getElementById("quizSteps");
     if (!quizStepsContainer) return;
     quizStepsContainer.innerHTML = "";
@@ -1339,7 +1354,7 @@ function nextStep() {
     const currentStep = quizSteps[state.currentQuizStep];
     const input = document.getElementById(currentStep.id);
     if (!input) return;
-    state.quizAnswers[currentStep.id] = input.value.trim();
+    state.quizAnswers[currentStep.id] = input.value.trim() || (currentStep.type === "number" ? currentStep.min || "" : "");
 
     if (!validateStep(state.currentQuizStep)) return;
 
@@ -1362,8 +1377,7 @@ function nextStep() {
 }
 
 function generateSchedule() {
-    console.log("Generating schedule with answers:", state.quizAnswers);
-    const { wakeUp, bedtime, schoolStart, schoolEnd, subjects, studyIntensity, exerciseType, exerciseDuration, hobbies, hobbyDuration, breakActivity, freeTimeActivity, timePreference } = state.quizAnswers;
+    const { wakeUp, bedtime, schoolStart, schoolEnd, subjects, studyIntensity, externalWork, exerciseType, exerciseDuration, hobbies, hobbyDuration, breakActivity, freeTimeActivity, timePreference } = state.quizAnswers;
     if (!wakeUp || !bedtime) {
         showNotification("Please provide wake-up and bedtime!", "error");
         return;
@@ -1371,18 +1385,14 @@ function generateSchedule() {
     state.schedule = [];
     let currentTime = wakeUp;
     const bedtimeDate = parseTime(bedtime) || new Date().setHours(23, 59, 0, 0);
-    const bedtimeMinutes = bedtimeDate.getHours() * 60 + bedtimeDate.getMinutes();
 
-    const addTask = (title, description, duration, iconClass) => {
-        const parsedTime = parseTime(currentTime);
-        if (!parsedTime) return false;
-        let currentMinutes = parsedTime.getHours() * 60 + parsedTime.getMinutes();
-        if (currentMinutes + duration > bedtimeMinutes) {
-            console.log(`Skipping task "${title}" as it exceeds bedtime`);
+    const addTask = (title, description, duration, iconClass, type = "custom") => {
+        if (hasTimeConflict(currentTime, duration, state.schedule, bedtimeDate)) {
+            console.log(`Skipping task "${title}" due to time conflict or bedtime`);
             return false;
         }
         const taskId = `${currentTime}-${title}-${Date.now()}`;
-        state.schedule.push({ id: taskId, time: currentTime, title, description, duration, iconClass, completed: false });
+        state.schedule.push({ id: taskId, time: currentTime, title, description, duration, iconClass, completed: false, type });
         currentTime = addMinutes(currentTime, duration);
         return true;
     };
@@ -1391,11 +1401,11 @@ function generateSchedule() {
     addTask("Morning Routine", "Get ready for the day 🪥", 30, "fas fa-tooth");
 
     if ((timePreference === "Morning" || timePreference === "Both") && exerciseType && exerciseDuration) {
-        addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()} 💪`, parseInt(exerciseDuration), "fas fa-dumbbell");
+        addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()} 💪`, parseInt(exerciseDuration), "fas fa-dumbbell", "exercise");
     }
 
     if (schoolStart && parseTime(currentTime) < parseTime(schoolStart)) {
-        addTask("Free Time", freeTimeActivity || "Relax 🎉", 45, "fas fa-party-horn");
+        addTask("Free Time", freeTimeActivity || "Relax 🎉", 45, "fas fa-party-horn", "free");
         currentTime = schoolStart;
     }
 
@@ -1409,39 +1419,39 @@ function generateSchedule() {
         }
     }
 
-    addTask("Lunch Break", "Enjoy your meal 🍽️", 45, "fas fa-utensils");
+    addTask("Lunch Break", "Enjoy your meal 🍽️", 45, "fas fa-utensils", "break");
+
+    if (externalWork) {
+        addTask("External Work", externalWork, 60, "fas fa-briefcase", "work");
+    }
 
     if (subjects) {
         const subjectsList = subjects.split(",").map(s => s.trim()).filter(s => s);
-        const studyDuration = studyIntensity === "Chill" ? 30 : studyIntensity === "Balanced" ? 45 : 60;
+        const studyDuration = Math.max(60, studyIntensity === "Chill" ? 60 : studyIntensity === "Balanced" ? 90 : 120);
         subjectsList.forEach(subject => {
-            if (!addTask(`Study: ${subject}`, `Focus on ${subject} 📖`, studyDuration, "fas fa-book")) return;
-            addTask(breakActivity || "Break", "Take a short break ☕", 10, "fas fa-coffee");
+            if (!addTask(`Study: ${subject}`, `Focus on ${subject} 📖`, studyDuration, "fas fa-book", "study")) return;
+            addTask(breakActivity || "Break", "Take a short break ☕", 15, "fas fa-coffee", "break");
         });
     }
 
     if ((timePreference === "Night" || timePreference === "Both") && exerciseType && exerciseDuration) {
-        addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()} 💪`, parseInt(exerciseDuration), "fas fa-dumbbell");
+        addTask(`Exercise: ${exerciseType}`, `Time for ${exerciseType.toLowerCase()} 💪`, parseInt(exerciseDuration), "fas fa-dumbbell", "exercise");
     }
 
     if (hobbies && hobbyDuration) {
         const hobbiesList = hobbies.split(",").map(h => h.trim()).filter(h => h);
-        addTask("Hobbies", `Enjoy ${hobbiesList.join(", ")} 🎨`, parseInt(hobbyDuration), "fas fa-paint-brush");
+        addTask("Hobbies", `Enjoy ${hobbiesList.join(", ")} 🎨`, parseInt(hobbyDuration), "fas fa-paint-brush", "hobby");
     }
 
-    addTask("Free Time", freeTimeActivity || "Relax 🎉", 45, "fas fa-party-horn");
-    addTask("Bedtime", "Get some rest 😴", 0, "fas fa-bed");
+    if (!hasTimeConflict(currentTime, 45, state.schedule, bedtimeDate)) {
+        addTask("Free Time", freeTimeActivity || "Relax 🎉", 45, "fas fa-party-horn", "free");
+    }
 
-    state.schedule.sort((a, b) => {
-        const timeA = parseTime(a.time) || new Date(0);
-        const timeB = parseTime(b.time) || new Date(0);
-        return timeA - timeB;
-    });
+    addTask("Bedtime", "Get some rest 😴", 0, "fas fa-bed");
     renderSchedule();
 }
 
 function renderSchedule() {
-    console.log("Rendering schedule:", state.schedule);
     const scheduleDisplay = document.getElementById("scheduleDisplay");
     if (!scheduleDisplay) return;
     requestAnimationFrame(() => {
@@ -1473,7 +1483,7 @@ function renderSchedule() {
         scheduleDisplay.appendChild(fragment);
         scheduleDisplay.querySelectorAll(".task-checkbox").forEach((checkbox, i) => {
             checkbox.addEventListener("click", () => toggleTask(state.schedule[i].id));
-            checkbox.addEventListener("keydown", (e) => {
+            checkbox.addEventListener("keydown", e => {
                 if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     toggleTask(state.schedule[i].id);
@@ -1484,7 +1494,7 @@ function renderSchedule() {
 }
 
 function saveSchedule() {
-    state.tasks = state.schedule.map(item => ({ ...item, type: inferTaskType(item.title) }));
+    state.tasks = state.schedule.map(item => ({ ...item }));
     state.reminders = state.tasks.map(task => ({ ...task, id: `${task.time}-${task.title}-${Date.now()}` }));
     state.user.hobbies = state.quizAnswers.hobbies ? state.quizAnswers.hobbies.split(",").map(h => h.trim()).filter(h => h) : [];
     state.user.name = state.quizAnswers.name || "Student";
@@ -1503,11 +1513,11 @@ function inferTaskType(title) {
     if (title.includes("hobbies")) return "hobby";
     if (title.includes("break") || title.includes("lunch")) return "break";
     if (title.includes("free time")) return "free";
+    if (title.includes("work")) return "work";
     return "custom";
 }
 
 function toggleTask(taskId) {
-    console.log("Toggling task:", taskId);
     const task = state.tasks.find(t => t.id === taskId);
     const reminder = state.reminders.find(r => r.id === taskId);
     const scheduleItem = state.schedule.find(s => s.id === taskId);
@@ -1556,17 +1566,110 @@ function toggleTask(taskId) {
     }
 }
 
-function deleteTask(taskId) {
-    state.tasks = state.tasks.filter(t => t.id !== taskId);
-    state.schedule = state.schedule.filter(s => s.id !== taskId);
-    state.reminders = state.reminders.filter(r => r.id !== taskId);
-    saveState();
-    showNotification("Task deleted! 🗑️");
+function editTask(taskId) {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task) {
+        showNotification("Task not found!", "error");
+        return;
+    }
+    const tasksList = document.getElementById("tasksList");
+    const remindersList = document.getElementById("remindersList");
+    const container = tasksList?.contains(document.querySelector(`[data-task-id="${taskId}"]`)) ? tasksList : remindersList;
+    if (!container) return;
+
+    const taskElement = container.querySelector(`[data-task-id="${taskId}"]`);
+    if (!taskElement) return;
+
+    taskElement.innerHTML = `
+        <div class="form-group">
+            <label class="form-label" for="editTaskTime-${taskId}">Time</label>
+            <input type="time" class="form-input" id="editTaskTime-${taskId}" value="${sanitizeHTML(task.time)}" required aria-required="true">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="editTaskText-${taskId}">Task Description</label>
+            <input type="text" class="form-input" id="editTaskText-${taskId}" value="${sanitizeHTML(task.title)}" required aria-required="true">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="editTaskDuration-${taskId}">Duration (minutes)</label>
+            <input type="number" class="form-input" id="editTaskDuration-${taskId}" value="${task.duration}" min="${task.type === 'study' ? 60 : 0}" required aria-required="true">
+        </div>
+        <div class="flex gap-10">
+            <button class="btn btn-small" onclick="saveEditedTask('${taskId}')" aria-label="Save edited task">Save</button>
+            <button class="btn btn-small btn-secondary" onclick="cancelEditTask('${taskId}')" aria-label="Cancel editing task">Cancel</button>
+        </div>
+    `;
+}
+
+function saveEditedTask(taskId) {
+    const time = document.getElementById(`editTaskTime-${taskId}`)?.value;
+    const text = document.getElementById(`editTaskText-${taskId}`)?.value.trim();
+    const duration = parseInt(document.getElementById(`editTaskDuration-${taskId}`)?.value);
+
+    if (!time || !text || isNaN(duration) || duration < (inferTaskType(text) === "study" ? 60 : 0)) {
+        showNotification("Please enter valid time, description, and duration!", "error");
+        return;
+    }
+
+    const bedtime = state.quizAnswers.bedtime ? parseTime(state.quizAnswers.bedtime) : null;
+    if (bedtime) {
+        const taskTime = parseTime(time);
+        if (taskTime && taskTime > bedtime) {
+            showNotification("Task time cannot be after bedtime!", "error");
+            return;
+        }
+    }
+
+    const task = state.tasks.find(t => t.id === taskId);
+    const reminder = state.reminders.find(r => r.id === taskId);
+    const scheduleItem = state.schedule.find(s => s.id === taskId);
+
+    if (task && scheduleItem) {
+        task.time = time;
+        task.title = text;
+        task.description = text;
+        task.duration = duration;
+        task.iconClass = inferTaskType(text) === "study" ? "fas fa-book" : inferTaskType(text) === "exercise" ? "fas fa-dumbbell" : inferTaskType(text) === "hobby" ? "fas fa-paint-brush" : inferTaskType(text) === "work" ? "fas fa-briefcase" : "fas fa-bell";
+        task.type = inferTaskType(text);
+        scheduleItem.time = time;
+        scheduleItem.title = text;
+        scheduleItem.description = text;
+        scheduleItem.duration = duration;
+        scheduleItem.iconClass = task.iconClass;
+        scheduleItem.type = task.type;
+        if (reminder) {
+            reminder.time = time;
+            reminder.title = text;
+            reminder.description = text;
+            reminder.duration = duration;
+            reminder.iconClass = task.iconClass;
+            reminder.type = task.type;
+        }
+
+        state.tasks.sort((a, b) => (parseTime(a.time) || new Date(0)) - (parseTime(b.time) || new Date(0)));
+        state.schedule.sort((a, b) => (parseTime(a.time) || new Date(0)) - (parseTime(b.time) || new Date(0)));
+        state.reminders.sort((a, b) => (parseTime(a.time) || new Date(0)) - (parseTime(b.time) || new Date(0)));
+        saveState();
+        showNotification("Task updated! ✅");
+        updateUI();
+    }
+}
+
+function cancelEditTask(taskId) {
     updateUI();
 }
 
+function deleteTask(taskId) {
+    if (confirm("Are you sure you want to delete this task?")) {
+        state.tasks = state.tasks.filter(t => t.id !== taskId);
+        state.schedule = state.schedule.filter(s => s.id !== taskId);
+        state.reminders = state.reminders.filter(r => r.id !== taskId);
+        saveState();
+        showNotification("Task deleted! 🗑️");
+        updateUI();
+    }
+}
+
 function renderTasks() {
-    console.log("Rendering tasks:", state.tasks);
     const tasksList = document.getElementById("tasksList");
     if (!tasksList) return;
     requestAnimationFrame(() => {
@@ -1578,6 +1681,7 @@ function renderTasks() {
                 taskElement.className = `task-item ${task.completed ? 'completed' : ''} ${task.type || ''}`;
                 taskElement.setAttribute("role", "listitem");
                 taskElement.setAttribute("aria-label", `Task: ${task.title}, ${task.completed ? 'completed' : 'not completed'}`);
+                taskElement.setAttribute("data-task-id", task.id);
                 taskElement.innerHTML = `
                     <div class="task-checkbox ${task.completed ? 'checked' : ''}" role="checkbox" aria-checked="${task.completed}" aria-label="Toggle task completion" tabindex="0"></div>
                     <div class="task-content">
@@ -1589,22 +1693,22 @@ function renderTasks() {
                         </div>
                         <div>${sanitizeHTML(task.description)}</div>
                     </div>
-                    <button class="btn btn-small btn-secondary" aria-label="Remove task">Remove</button>
+                    <div class="flex gap-10">
+                        <button class="btn btn-small btn-secondary" onclick="editTask('${task.id}')" aria-label="Edit task">Edit</button>
+                        <button class="btn btn-small btn-secondary" onclick="deleteTask('${task.id}')" aria-label="Remove task">Remove</button>
+                    </div>
                 `;
                 fragment.appendChild(taskElement);
             });
             tasksList.appendChild(fragment);
             tasksList.querySelectorAll(".task-checkbox").forEach((checkbox, i) => {
                 checkbox.addEventListener("click", () => toggleTask(state.tasks[i].id));
-                checkbox.addEventListener("keydown", (e) => {
+                checkbox.addEventListener("keydown", e => {
                     if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
                         toggleTask(state.tasks[i].id);
                     }
                 });
-            });
-            tasksList.querySelectorAll(".btn-secondary").forEach((button, i) => {
-                button.addEventListener("click", () => deleteTask(state.tasks[i].id));
             });
         } else {
             tasksList.innerHTML = `
@@ -1643,7 +1747,7 @@ function addReminder() {
         title: text,
         description: text,
         duration: 30,
-        iconClass: inferTaskType(text) === "study" ? "fas fa-book" : inferTaskType(text) === "exercise" ? "fas fa-dumbbell" : inferTaskType(text) === "hobby" ? "fas fa-paint-brush" : "fas fa-bell",
+        iconClass: inferTaskType(text) === "study" ? "fas fa-book" : inferTaskType(text) === "exercise" ? "fas fa-dumbbell" : inferTaskType(text) === "hobby" ? "fas fa-paint-brush" : inferTaskType(text) === "work" ? "fas fa-briefcase" : "fas fa-bell",
         completed: false,
         type: inferTaskType(text)
     };
@@ -1651,21 +1755,9 @@ function addReminder() {
     state.reminders.push(reminder);
     state.tasks.push({ ...reminder });
     state.schedule.push({ ...reminder });
-    state.reminders.sort((a, b) => {
-        const timeA = parseTime(a.time) || new Date(0);
-        const timeB = parseTime(b.time) || new Date(0);
-        return timeA - timeB;
-    });
-    state.tasks.sort((a, b) => {
-        const timeA = parseTime(a.time) || new Date(0);
-        const timeB = parseTime(b.time) || new Date(0);
-        return timeA - timeB;
-    });
-    state.schedule.sort((a, b) => {
-        const timeA = parseTime(a.time) || new Date(0);
-        const timeB = parseTime(b.time) || new Date(0);
-        return timeA - timeB;
-    });
+    state.reminders.sort((a, b) => (parseTime(a.time) || new Date(0)) - (parseTime(b.time) || new Date(0)));
+    state.tasks.sort((a, b) => (parseTime(a.time) || new Date(0)) - (parseTime(b.time) || new Date(0)));
+    state.schedule.sort((a, b) => (parseTime(a.time) || new Date(0)) - (parseTime(b.time) || new Date(0)));
     saveState();
     showNotification("Reminder added! 🔔");
     document.getElementById("reminderTime").value = "";
@@ -1674,8 +1766,7 @@ function addReminder() {
 }
 
 function deleteReminder(id) {
-    const reminder = state.reminders.find(r => r.id === id);
-    if (reminder) {
+    if (confirm("Are you sure you want to delete this reminder?")) {
         state.reminders = state.reminders.filter(r => r.id !== id);
         state.tasks = state.tasks.filter(t => t.id !== id);
         state.schedule = state.schedule.filter(s => s.id !== id);
@@ -1686,7 +1777,6 @@ function deleteReminder(id) {
 }
 
 function renderReminders() {
-    console.log("Rendering reminders:", state.reminders);
     const remindersList = document.getElementById("remindersList");
     if (!remindersList) return;
     requestAnimationFrame(() => {
@@ -1698,6 +1788,7 @@ function renderReminders() {
                 reminderElement.className = `task-item ${reminder.completed ? 'completed' : ''} ${reminder.type || ''}`;
                 reminderElement.setAttribute("role", "listitem");
                 reminderElement.setAttribute("aria-label", `Reminder: ${reminder.title}, ${reminder.completed ? 'completed' : 'not completed'}`);
+                reminderElement.setAttribute("data-task-id", reminder.id);
                 reminderElement.innerHTML = `
                     <div class="task-checkbox ${reminder.completed ? 'checked' : ''}" role="checkbox" aria-checked="${reminder.completed}" aria-label="Toggle reminder completion" tabindex="0"></div>
                     <div class="task-content">
@@ -1709,22 +1800,22 @@ function renderReminders() {
                         </div>
                         <div>${sanitizeHTML(reminder.description)}</div>
                     </div>
-                    <button class="btn btn-small btn-secondary" aria-label="Remove reminder">Remove</button>
+                    <div class="flex gap-10">
+                        <button class="btn btn-small btn-secondary" onclick="editTask('${reminder.id}')" aria-label="Edit reminder">Edit</button>
+                        <button class="btn btn-small btn-secondary" onclick="deleteReminder('${reminder.id}')" aria-label="Remove reminder">Remove</button>
+                    </div>
                 `;
                 fragment.appendChild(reminderElement);
             });
             remindersList.appendChild(fragment);
             remindersList.querySelectorAll(".task-checkbox").forEach((checkbox, i) => {
                 checkbox.addEventListener("click", () => toggleTask(state.reminders[i].id));
-                checkbox.addEventListener("keydown", (e) => {
+                checkbox.addEventListener("keydown", e => {
                     if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
                         toggleTask(state.reminders[i].id);
                     }
                 });
-            });
-            remindersList.querySelectorAll(".btn-secondary").forEach((button, i) => {
-                button.addEventListener("click", () => deleteReminder(state.reminders[i].id));
             });
         } else {
             remindersList.innerHTML = `
@@ -1739,7 +1830,6 @@ function renderReminders() {
 }
 
 function renderProgress() {
-    console.log("Rendering progress:", state.user, state.completedTasks);
     const totalStreak = document.getElementById("totalStreak");
     const totalTasksCompleted = document.getElementById("totalTasksCompleted");
     const totalXP = document.getElementById("totalXP");
@@ -1808,7 +1898,6 @@ function saveHobbies() {
 }
 
 function renderHobbies() {
-    console.log("Rendering hobbies:", state.user.hobbies);
     const hobbiesList = document.getElementById("hobbiesList");
     if (!hobbiesList) return;
     requestAnimationFrame(() => {
@@ -1877,31 +1966,18 @@ function addQuickTask() {
         time,
         title: text,
         description: text,
-        duration: 30,
-        iconClass: inferTaskType(text) === "study" ? "fas fa-book" : inferTaskType(text) === "exercise" ? "fas fa-dumbbell" : inferTaskType(text) === "hobby" ? "fas fa-paint-brush" : "fas fa-bell",
+        duration: inferTaskType(text) === "study" ? 60 : 30,
+        iconClass: inferTaskType(text) === "study" ? "fas fa-book" : inferTaskType(text) === "exercise" ? "fas fa-dumbbell" : inferTaskType(text) === "hobby" ? "fas fa-paint-brush" : inferTaskType(text) === "work" ? "fas fa-briefcase" : "fas fa-bell",
         completed: false,
         type: inferTaskType(text)
     };
 
-    console.log("Adding task:", task);
     state.tasks.push(task);
     state.schedule.push(task);
     state.reminders.push({ ...task, id: `${time}-${text}-${Date.now()}` });
-    state.tasks.sort((a, b) => {
-        const timeA = parseTime(a.time) || new Date(0);
-        const timeB = parseTime(b.time) || new Date(0);
-        return timeA - timeB;
-    });
-    state.schedule.sort((a, b) => {
-        const timeA = parseTime(a.time) || new Date(0);
-        const timeB = parseTime(b.time) || new Date(0);
-        return timeA - timeB;
-    });
-    state.reminders.sort((a, b) => {
-        const timeA = parseTime(a.time) || new Date(0);
-        const timeB = parseTime(b.time) || new Date(0);
-        return timeA - timeB;
-    });
+    state.tasks.sort((a, b) => (parseTime(a.time) || new Date(0)) - (parseTime(b.time) || new Date(0)));
+    state.schedule.sort((a, b) => (parseTime(a.time) || new Date(0)) - (parseTime(b.time) || new Date(0)));
+    state.reminders.sort((a, b) => (parseTime(a.time) || new Date(0)) - (parseTime(b.time) || new Date(0)));
     saveState();
     showNotification("Task added! ✅");
     document.getElementById("quickTaskTime").value = "";
@@ -1911,7 +1987,6 @@ function addQuickTask() {
 }
 
 function updateUI() {
-    console.log("Updating UI with state:", state);
     const welcomeName = document.getElementById("welcomeName");
     const welcomeAvatar = document.getElementById("welcomeAvatar");
     if (welcomeName) welcomeName.textContent = `Hello, ${sanitizeHTML(state.user.name)}!`;
@@ -1926,8 +2001,10 @@ function updateUI() {
 
     const progressRing = document.getElementById("progressRing");
     if (progressRing) {
+        const radius = progressRing.getAttribute("r");
+        const circumference = 2 * Math.PI * radius;
         const xpProgress = (state.user.xp % 100) / 100;
-        const circumference = 264;
+        progressRing.style.strokeDasharray = circumference;
         progressRing.style.strokeDashoffset = circumference * (1 - xpProgress);
     }
 
@@ -1964,7 +2041,7 @@ function updateUI() {
                 todaySchedule.appendChild(fragment);
                 todaySchedule.querySelectorAll(".task-checkbox").forEach((checkbox, i) => {
                     checkbox.addEventListener("click", () => toggleTask(upcomingTasks[i].id));
-                    checkbox.addEventListener("keydown", (e) => {
+                    checkbox.addEventListener("keydown", e => {
                         if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
                             toggleTask(upcomingTasks[i].id);
@@ -1977,10 +2054,10 @@ function updateUI() {
                         <div class="empty-icon"><i class="fas fa-calendar"></i></div>
                         <div class="empty-title">No Schedule Yet</div>
                         <div class="empty-description">Create your daily schedule to get started! 📅</div>
-                        <button class="btn mt-2" aria-label="Create new schedule">Create Schedule</button>
+                        <button class="btn mt-20" aria-label="Create new schedule">Create Schedule</button>
                     </div>
                 `;
-                todayScheduleBtn = todaySchedule.querySelector("button.btn");
+                const todayScheduleBtn = todaySchedule.querySelector("button.btn");
                 if (todayScheduleBtn) {
                     todayScheduleBtn.addEventListener("click", () => navigateTo("scheduler"));
                 }
@@ -1989,42 +2066,20 @@ function updateUI() {
     }
 
     const profileName = document.getElementById("profileName");
-    const profileAvatar = document.createElement("div");
     const profileLevel = document.getElementById("profileLevel");
-    const profileXP = document.createElement("div");
+    const profileXP = document.getElementById("profileXP");
     const xpFill = document.getElementById("xpFill");
-    const currentXP = document.createElement("span");
-    const nextLevelXP = document.createElement("span");
+    const currentXP = document.getElementById("currentXP");
+    const nextLevelXP = document.getElementById("nextLevelXP");
     if (profileName) profileName.textContent = sanitizeHTML(state.user.name);
-    if (xpFill) xpFill.style.width = `${(state.user.xp % 100)}%`;
     if (profileLevel) profileLevel.textContent = state.user.level;
-    const profileSection = document.getElementById("profile");
-    if (profileSection) {
-        profileAvatar.id = "profileAvatar";
-        profileAvatar.innerHTML = `<i class="${sanitizeHTML(state.user.avatar)}"></i>`;
-        if (!document.getElementById("profileAvatar")) {
-            profileSection.insertBefore(profileAvatar, profileSection.firstChild);
-        }
-        profileXP.id = "profileXP";
-        profileXP.textContent = state.user.xp;
-        if (!document.getElementById("profileXP")) {
-            profileSection.appendChild(profileXP);
-        }
-        currentXP.id = "currentXP";
-        currentXP.textContent = state.user.xp % 100;
-        if (!document.getElementById("currentXP")) {
-            profileSection.appendChild(currentXP);
-        }
-        nextLevelXP.id = "nextLevelXP";
-        nextLevelXP.textContent = 100;
-        if (!document.getElementById("nextLevelXP")) {
-            profileSection.appendChild(nextLevelXP);
-        }
-    }
-    const existingProfileAvatar = document.getElementById("profileAvatar");
-    if (existingProfileAvatar) {
-        existingProfileAvatar.addEventListener("click", changeAvatar);
-    }
+    if (profileXP) profileXP.textContent = state.user.xp;
+    if (xpFill) xpFill.style.width = `${(state.user.xp % 100)}%`;
+    if (currentXP) currentXP.textContent = state.user.xp % 100;
+    if (nextLevelXP) nextLevelXP.textContent = 100;
+
+    const profileAvatar = document.getElementById("profileAvatar");
+    if (profileAvatar) profileAvatar.innerHTML = `<i class="${sanitizeHTML(state.user.avatar)}"></i>`;
 
     renderTasks();
     renderReminders();
@@ -2046,7 +2101,6 @@ function updateUI() {
 }
 
 function initialize() {
-    console.log("Initializing app");
     loadState();
     initializeNavigation();
     initializeThemeSelector();
